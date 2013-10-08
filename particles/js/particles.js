@@ -1,7 +1,7 @@
 
 if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
-var container, stats;
+var container;//, stats;
 var camera, scene, renderer, particles, geometry, material, i, h, color, sprite, size;
 var mouseX = 0, mouseY = 0;
 
@@ -24,21 +24,21 @@ function init() {
 
     geometry = new THREE.Geometry();
 
-    sprite = THREE.ImageUtils.loadTexture( "textures/sprites/disc.png" );
+    sprite = THREE.ImageUtils.loadTexture( "textures/disc.png" );
 
-    for ( i = 0; i < 10000; i ++ ) {
+    for ( i = -4; i < 4; i ++ ) {
 
         var vertex = new THREE.Vector3();
-        vertex.x = 2000 * Math.random() - 1000;
-        vertex.y = 2000 * Math.random() - 1000;
-        vertex.z = 2000 * Math.random() - 1000;
+        vertex.x = i * 50;//2000 * Math.random() - 1000;
+        vertex.y = 0;//2000 * Math.random() - 1000;
+        vertex.z = 0;//2000 * Math.random() - 1000;
 
         geometry.vertices.push( vertex );
 
     }
 
     material = new THREE.ParticleBasicMaterial( { size: 35, sizeAttenuation: false, map: sprite, transparent: true } );
-    material.color.setHSL( 1.0, 0.3, 0.7 );
+    //material.color.setHSV( 1.0, 0.3, 0.7 );
 
     particles = new THREE.ParticleSystem( geometry, material );
     particles.sortParticles = true;
@@ -52,10 +52,10 @@ function init() {
 
     //
 
-    stats = new Stats();
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.top = '0px';
-    container.appendChild( stats.domElement );
+    //stats = new Stats();
+    //stats.domElement.style.position = 'absolute';
+    //stats.domElement.style.top = '0px';
+    //container.appendChild( stats.domElement );
 
     //
 
@@ -120,7 +120,7 @@ function animate() {
     requestAnimationFrame( animate );
 
     render();
-    stats.update();
+    //stats.update();
 
 }
 
@@ -134,7 +134,7 @@ function render() {
     camera.lookAt( scene.position );
 
     h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
-    material.color.setHSL( h, 0.5, 0.5 );
+    //material.color.setHSV( h, 0.5, 0.5 );
 
     renderer.render( scene, camera );
 
