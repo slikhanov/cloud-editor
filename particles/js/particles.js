@@ -26,12 +26,14 @@ function init() {
 
     sprite = THREE.ImageUtils.loadTexture( "textures/disc.png" );
 
-    for ( i = -4; i < 4; i ++ ) {
-
+    for ( i = -4; i < 4; i ++ ) 
+        for (j = -4; j < 4; j ++)
+            for (k = -4; k < 4; k ++)
+    {
         var vertex = new THREE.Vector3();
         vertex.x = i * 50;//2000 * Math.random() - 1000;
-        vertex.y = 0;//2000 * Math.random() - 1000;
-        vertex.z = 0;//2000 * Math.random() - 1000;
+        vertex.y = j * 50;//2000 * Math.random() - 1000;
+        vertex.z = k * 50;//2000 * Math.random() - 1000;
 
         geometry.vertices.push( vertex );
 
@@ -128,10 +130,12 @@ function render() {
 
     var time = Date.now() * 0.00005;
 
-    camera.position.x += ( mouseX - camera.position.x ) * 0.05;
-    camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+    //camera.position.x += ( mouseX - camera.position.x ) * 0.5;
+    //camera.position.y += ( - mouseY - camera.position.y ) * 0.5;
 
-    camera.lookAt( scene.position );
+    particles.rotation.y += 0.002;
+
+    //camera.lookAt( scene.position );
 
     h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
     //material.color.setHSV( h, 0.5, 0.5 );
