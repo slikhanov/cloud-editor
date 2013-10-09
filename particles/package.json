@@ -6,7 +6,7 @@
     "frame": true,
     "width": 500,
     "height": 400,
-    "toolbar": false,
+    "toolbar": true,
     "position": "center",
     "resizable": true
   }
