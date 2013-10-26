@@ -39,7 +39,7 @@ function init()
     }
 
     material = new THREE.ParticleBasicMaterial( { size: 35, sizeAttenuation: false, map: sprite, transparent: true } );
-    //material.color.setHSV( 1.0, 0.3, 0.7 );
+    material.color.setHSL( 1.0, 0.3, 0.7 );
 
     particles = new THREE.ParticleSystem( geometry, material );
     particles.sortParticles = true;
