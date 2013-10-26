@@ -1,7 +1,8 @@
 
-if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+if (!Detector.webgl) 
+    Detector.addGetWebGLMessage();
 
-var container;//, stats;
+var container;
 var camera, scene, renderer, particles, geometry, material, i, h, color, sprite, size;
 var mouseX = 0, mouseY = 0;
 
@@ -11,8 +12,8 @@ var windowHalfY = window.innerHeight / 2;
 init();
 animate();
 
-function init() {
-
+function init() 
+{
     container = document.createElement( 'div' );
     document.body.appendChild( container );
 
@@ -31,12 +32,10 @@ function init() {
             for (k = -4; k < 4; k ++)
     {
         var vertex = new THREE.Vector3();
-        vertex.x = i * 50;//2000 * Math.random() - 1000;
-        vertex.y = j * 50;//2000 * Math.random() - 1000;
-        vertex.z = k * 50;//2000 * Math.random() - 1000;
-
+        vertex.x = i * 50;
+        vertex.y = j * 50;
+        vertex.z = k * 50;
         geometry.vertices.push( vertex );
-
     }
 
     material = new THREE.ParticleBasicMaterial( { size: 35, sizeAttenuation: false, map: sprite, transparent: true } );
@@ -46,101 +45,66 @@ function init() {
     particles.sortParticles = true;
     scene.add( particles );
 
-    //
-
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
     renderer.setSize( window.innerWidth, window.innerHeight );
     container.appendChild( renderer.domElement );
-
-    //
-
-    //stats = new Stats();
-    //stats.domElement.style.position = 'absolute';
-    //stats.domElement.style.top = '0px';
-    //container.appendChild( stats.domElement );
-
-    //
 
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.addEventListener( 'touchstart', onDocumentTouchStart, false );
     document.addEventListener( 'touchmove', onDocumentTouchMove, false );
 
-    //
-
     window.addEventListener( 'resize', onWindowResize, false );
-
 }
 
-function onWindowResize() {
-
+function onWindowResize() 
+{
     windowHalfX = window.innerWidth / 2;
     windowHalfY = window.innerHeight / 2;
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize( window.innerWidth, window.innerHeight );
-
 }
 
-function onDocumentMouseMove( event ) {
-
+function onDocumentMouseMove(event) 
+{
     mouseX = event.clientX - windowHalfX;
     mouseY = event.clientY - windowHalfY;
-
 }
 
-function onDocumentTouchStart( event ) {
-
-    if ( event.touches.length == 1 ) {
-
+function onDocumentTouchStart(event) 
+{
+    if (event.touches.length == 1) 
+    {
         event.preventDefault();
-
         mouseX = event.touches[ 0 ].pageX - windowHalfX;
         mouseY = event.touches[ 0 ].pageY - windowHalfY;
-
     }
 }
 
-function onDocumentTouchMove( event ) {
-
-    if ( event.touches.length == 1 ) {
-
+function onDocumentTouchMove(event) 
+{
+    if (event.touches.length == 1) 
+    {
         event.preventDefault();
-
         mouseX = event.touches[ 0 ].pageX - windowHalfX;
         mouseY = event.touches[ 0 ].pageY - windowHalfY;
-
     }
-
 }
 
 //
 
-function animate() {
-
+function animate() 
+{
     requestAnimationFrame( animate );
-
     render();
-    //stats.update();
-
 }
 
-function render() {
-
+function render() 
+{
     var time = Date.now() * 0.00005;
-
-    //camera.position.x += ( mouseX - camera.position.x ) * 0.5;
-    //camera.position.y += ( - mouseY - camera.position.y ) * 0.5;
-
     particles.rotation.y += 0.002;
-
-    //camera.lookAt( scene.position );
-
     h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
-    //material.color.setHSV( h, 0.5, 0.5 );
-
     renderer.render( scene, camera );
-
 }
 
