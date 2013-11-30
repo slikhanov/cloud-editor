@@ -13,7 +13,7 @@ function initGUI()
 {
     settings = new SceneSettings();
     gui = new dat.GUI();
-    gui.add(settings, "rotationSpeed");
+    gui.add(settings, "rotationSpeed").min(-0.05).max(0.05).step(0.001)
 }
 
 
