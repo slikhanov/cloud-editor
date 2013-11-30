@@ -2,6 +2,21 @@
 if (!Detector.webgl) 
     Detector.addGetWebGLMessage();
 
+var SceneSettings = function()
+{
+    this.rotationSpeed = 0.002;
+}
+
+var settings, gui;
+
+function initGUI()
+{
+    settings = new SceneSettings();
+    gui = new dat.GUI();
+    gui.add(settings, "rotationSpeed");
+}
+
+
 var container;
 var camera, scene, renderer, particles, geometry, material, i, h, color, sprite, size;
 var mouseX = 0, mouseY = 0;
@@ -9,6 +24,7 @@ var mouseX = 0, mouseY = 0;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
+initGUI();
 init();
 animate();
 
@@ -49,9 +65,9 @@ function init()
     renderer.setSize( window.innerWidth, window.innerHeight );
     container.appendChild( renderer.domElement );
 
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    document.addEventListener( 'touchstart', onDocumentTouchStart, false );
-    document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+    document.addEventListener('touchstart', onDocumentTouchStart, false);
+    document.addEventListener('touchmove', onDocumentTouchMove, false);
 
     window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -103,7 +119,7 @@ function animate()
 function render() 
 {
     var time = Date.now() * 0.00005;
-    particles.rotation.y += 0.002;
+    particles.rotation.y += settings.rotationSpeed;
     h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
     renderer.render( scene, camera );
 }
