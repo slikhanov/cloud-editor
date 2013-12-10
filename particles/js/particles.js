@@ -18,8 +18,9 @@ function initGUI()
     //gui.add(settings, "positionx").min(-10.0).max(10.0).step(1.0)
 }
 
+var viewportContainer;
+var guiContainer;
 
-var container;
 var camera, scene, renderer, particles, geometry, material, i, h, color, sprite, size;
 var mouseX = 0, mouseY = 0;
 
@@ -128,7 +129,7 @@ function initGUI2()
 {
     if (gui2 != null)
         gui2.destroy();
-    gui2 = new dat.GUI();
+    gui2 = new dat.GUI({autoPlace: false});
     gui2.add(settings, "scale").min(1.0).max(100.0).step(1.0)
     if (selectedCloud != null)
     {
@@ -144,19 +145,22 @@ function initGUI2()
         positionFolder.add(selectedCloud.position, "y").min(-3.0).max(3.0).step(0.1)
         positionFolder.add(selectedCloud.position, "z").min(-3.0).max(3.0).step(0.1)
     }
+    guiContainer = document.getElementById('gui');
+    guiContainer.innerHTML = '';
+    guiContainer.appendChild(gui2.domElement);
 }
 
 init();
 initGUI();
 initGUI2();
 animate();
+render();
 
 var projector;
 
 function init() 
 {
-    container = document.createElement( 'div' );
-    document.body.appendChild( container );
+    viewportContainer = document.getElementById('gl');
 
     buildScene();
 
@@ -164,8 +168,8 @@ function init()
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
     renderer.setClearColor(0x000000, 1);
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    container.appendChild( renderer.domElement );
+    renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
+    viewportContainer.appendChild( renderer.domElement );
 
     document.addEventListener('mousemove', onDocumentMouseMove, false);
     document.addEventListener('touchstart', onDocumentTouchStart, false);
@@ -177,18 +181,18 @@ function init()
 
 function onWindowResize() 
 {
-    windowHalfX = window.innerWidth / 2;
-    windowHalfY = window.innerHeight / 2;
+    windowHalfX = viewportContainer.clientWidth / 2;
+    windowHalfY = viewportContainer.clientHeight / 2;
 
-    camera.aspect = window.innerWidth / window.innerHeight;
+    //camera.aspect =  / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
 }
 
 function onDocumentClick(event) 
 {
-    mouseX = event.clientX - windowHalfX;
-    mouseY = event.clientY - windowHalfY;
+    mouseX = event.clientX - viewportContainer.clientWidth;
+    mouseY = event.clientY - viewportContainer.clientHeight;
     performSelection(event.clientX, event.clientY);
 }
 
@@ -197,8 +201,8 @@ var pickMouseVector = new THREE.Vector3();
 
 function onDocumentMouseMove(event) 
 {
-    mouseX = event.clientX - windowHalfX;
-    mouseY = event.clientY - windowHalfY;
+    mouseX = event.clientX - viewportContainer.clientWidth;
+    mouseY = event.clientY - viewportContainer.clientHeight;
 }
 
 function onDocumentTouchStart(event) 
@@ -206,8 +210,8 @@ function onDocumentTouchStart(event)
     if (event.touches.length == 1) 
     {
         event.preventDefault();
-        mouseX = event.touches[ 0 ].pageX - windowHalfX;
-        mouseY = event.touches[ 0 ].pageY - windowHalfY;
+        mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
+        mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
     }
 }
 
@@ -216,8 +220,8 @@ function onDocumentTouchMove(event)
     if (event.touches.length == 1) 
     {
         event.preventDefault();
-        mouseX = event.touches[ 0 ].pageX - windowHalfX;
-        mouseY = event.touches[ 0 ].pageY - windowHalfY;
+        mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
+        mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
     }
 }
 
@@ -227,8 +231,8 @@ var selectedCloud;
 
 function performSelection(x, y)
 {
-    pickMouseVector.x = 2 * (x / window.innerWidth) - 1;
-    pickMouseVector.y = 1 - 2 * (y / window.innerHeight );
+    pickMouseVector.x = 2 * (x / viewportContainer.clientWidth) - 1;
+    pickMouseVector.y = 1 - 2 * (y / viewportContainer.clientHeight );
     
     var testRaycaster = projector.pickingRay( pickMouseVector.clone(), camera );
     var intersects = testRaycaster.intersectObjects( cloud.children );
@@ -245,7 +249,7 @@ function animate()
 {
     requestAnimationFrame(animate);
     controls.update();
-    //render();
+    render();
 }
 
 function render() 

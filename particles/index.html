@@ -3,13 +3,28 @@
   <head>
     <meta charset="utf-8">
     <title>Particles Playground</title>
+
+    <style type="text/css">
+    #gui {
+        float: left;
+        width: 250px;
+    }
+
+    #gl {
+        margin-left:250px;
+        width: 650px;
+        height: 400px;
+    }
+    </style>
+
     <script src="js/Detector.js"></script>
     <script src="js/three.min.js"></script>
     <script src="js/dat.gui.min.js"></script>
     <script src="js/OrbitControls.js"></script>
   </head>
   <body>
-    <div class="close"></close>
+    <div id="gui"></div>
+    <div id="gl"></div>
     <script src="js/particles.js"></script>
   </body>
 </html>
