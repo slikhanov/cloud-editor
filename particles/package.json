@@ -4,10 +4,10 @@
   "main": "index.html",
   "window": {
     "frame": true,
-    "width": 920,
-    "height": 500,
+    "width": 1070,
+    "height": 650,
     "toolbar": true,
     "position": "center",
-    "resizable": true
+    "resizable": false
   }
 }

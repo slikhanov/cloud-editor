@@ -10,6 +10,22 @@ var SerializedParticle = function(particle)
     this.textureIndex = particle._textureIndex;
 }
 
+function GetSaveFileName()
+{
+    if (process.platform == 'win32')
+        return 'c:/Users/slikhan/Desktop/CloudsScene.txt';
+    if (process.platform == 'darwin')
+        return '/Users/brutal/Desktop/CloudsScene.txt';
+}
+
+function GetExportFileName()
+{
+    if (process.platform == 'win32')
+        return 'c:/Users/slikhan/Desktop/CloudsExport.txt';
+    if (process.platform == 'darwin')
+        return '/Users/brutal/Desktop/CloudsExport.txt';
+}
+
 var SceneSettings = function()
 {
     this.scale = 50.0;
@@ -25,7 +41,7 @@ var SceneSettings = function()
     this.to_lua = function()
     {
         var fs = require('fs');
-        var fileName = "/Users/brutal/clouds.txt";
+        var fileName = GetExportFileName();//"/Users/brutal/clouds.txt";
         var stream = fs.createWriteStream(fileName, {flags: 'w'});
         var cnt = cloud.children.length;
         stream.write("levels = {{0, ");
@@ -75,7 +91,7 @@ var SceneSettings = function()
         });
 
         var fs = require('fs');
-        var fileName = "/Users/brutal/cloudsSave.txt";
+        var fileName = GetSaveFileName();//"/Users/brutal/cloudsSave.txt";
         var stream = fs.createWriteStream(fileName, {flags: 'w'});
         stream.write(JSON.stringify(serializedParticles));
     };
@@ -83,7 +99,7 @@ var SceneSettings = function()
     this.load = function()
     {
         var fs = require('fs');
-        var fileName = "/Users/brutal/cloudsSave.txt";
+        var fileName = GetSaveFileName();//"/Users/brutal/cloudsSave.txt";
         fs.readFile(fileName, function(err, data)
         {
             if (err) return;
@@ -114,11 +130,17 @@ var cloud;
 
 var textures = 
 [
-    THREE.ImageUtils.loadTexture("textures/001_ml.png"),
-    THREE.ImageUtils.loadTexture("textures/02_bPh.png"),
-    THREE.ImageUtils.loadTexture("textures/03_bPh.png"),
-    THREE.ImageUtils.loadTexture("textures/04_bPh.png"),
-    THREE.ImageUtils.loadTexture("textures/05_bPh.png")
+    THREE.ImageUtils.loadTexture("textures/000.png"),
+    THREE.ImageUtils.loadTexture("textures/001.png"),
+    THREE.ImageUtils.loadTexture("textures/002.png"),
+    THREE.ImageUtils.loadTexture("textures/003.png"),
+    THREE.ImageUtils.loadTexture("textures/004.png"),
+    THREE.ImageUtils.loadTexture("textures/005.png"),
+    THREE.ImageUtils.loadTexture("textures/006.png"),
+    THREE.ImageUtils.loadTexture("textures/007.png"),
+    THREE.ImageUtils.loadTexture("textures/008.png"),
+    THREE.ImageUtils.loadTexture("textures/009.png"),
+    THREE.ImageUtils.loadTexture("textures/010.png"),
 ];
 
 var cloudArray = [
