@@ -2,28 +2,27 @@
 if (!Detector.webgl) 
     Detector.addGetWebGLMessage();
 
+var SerializedParticle = function(particle)
+{
+    this.position = particle.position;
+    this.scale = particle.scale;
+    this.attenuation = particle._attenuation;
+    this.textureIndex = particle._textureIndex;
+}
+
 var SceneSettings = function()
 {
     this.scale = 50.0;
     this.positionx = 0.0;
     this.add = function() 
     {
-        var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-        var planeMaterial = new THREE.MeshBasicMaterial( 
-                { color: 0xdddddd, shading: THREE.FlatShading, map: textures[0], transparent: true });
-        planeMaterial.depthWrite = false;
-
-        var cell = new THREE.Mesh(planeGeometry, planeMaterial);
-        cell.position.setX(0.0);
-        cell.position.setY(0.0);
-        cell.position.setZ(0.0);
-        cell.scale.set(0.2, 0.2, 0.2);
-        cell.grayness = Math.random();
-
-        cloud.add(cell);
+        buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0);
+        //cloud.add(cell);
+        //selectedCloud = cell;
+        initGUI2();
     };
 
-    this.save = function()
+    this.to_lua = function()
     {
         var fs = require('fs');
         var fileName = "/Users/brutal/clouds.txt";
@@ -37,7 +36,7 @@ var SceneSettings = function()
         stream.write((cnt + 1).toString());
         stream.write(", 1}, {");
         stream.write((cnt + 2).toString());
-        stream.write(", 1},\n"); 
+        stream.write(", 1}},\n"); 
         stream.write("particleCount = ");
         stream.write((cnt + 3).toString());
         stream.write(",\n");
@@ -50,17 +49,48 @@ var SceneSettings = function()
                 stream.write(entry.position.z.toFixed(2) + " }, ");
 
                 stream.write("size = { ");
-                stream.write(entry.scale.x.toFixed(2) + ", ");
-                stream.write(entry.scale.y.toFixed(2) + " }, ");
+                stream.write(entry.scale.x.toFixed(2) + " * m, ");
+                stream.write(entry.scale.y.toFixed(2) + " * m}, ");
 
-                stream.write("texture = 13, edgeHardness = 100, orientation = 0");
+                stream.write("texture = 13, edgeHardness = 100, orientation = 0, attenuation = ");
+                stream.write((entry.attenuation * 255).toString());
 
                 stream.write("},\n");
             });
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 }\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga }\n"); 
         stream.write("}\n");
+    };
+
+    this.save = function()
+    {
+        var serializedParticles = [];
+        cloud.children.forEach(function(entry)
+        {
+            serializedParticles.push(new SerializedParticle(entry));
+        });
+
+        var fs = require('fs');
+        var fileName = "/Users/brutal/cloudsSave.txt";
+        var stream = fs.createWriteStream(fileName, {flags: 'w'});
+        stream.write(JSON.stringify(serializedParticles));
+    };
+
+    this.load = function()
+    {
+        var fs = require('fs');
+        var fileName = "/Users/brutal/cloudsSave.txt";
+        fs.readFile(fileName, function(err, data)
+        {
+            if (err) return;
+            var obj = JSON.parse(data);
+            obj.forEach(function(entry)
+            {
+                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex);
+            });
+        });
+
     };
 }
 
@@ -116,6 +146,41 @@ var cloudArray = [
 
 var controls;
 
+function buildParticle(pos, scale, attenuation, textureIndex)
+{
+    var col = new THREE.Color();
+    col.setRGB(attenuation, attenuation, attenuation);
+    var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
+    var planeMaterial = new THREE.MeshBasicMaterial( 
+            { color: col, shading: THREE.FlatShading, map: textures[textureIndex], transparent: true, vertexColors: true });
+    planeMaterial.depthWrite = false;
+
+    var cell = new THREE.Mesh(planeGeometry, planeMaterial);
+    cell.position = pos;
+    cell.scale = scale;
+    cell.grayness = Math.random();
+
+    cell._attenuation = attenuation;
+    cell.__defineGetter__("attenuation", function() 
+            { 
+                return this._attenuation; 
+            });
+    cell.__defineSetter__("attenuation", function(val) { 
+        this._attenuation = val; this.material.color.setRGB( val, val, val);
+    });
+
+    cell._textureIndex = textureIndex;
+    cell.__defineGetter__("textureIndex", function() 
+            { 
+                return this._textureIndex; 
+            });
+    cell.__defineSetter__("textureIndex", function(val) { 
+        this._textureIndex = val; this.material.map = textures[val];
+    });
+
+    cloud.add(cell);
+}
+
 function buildScene()
 {
     camera = new THREE.PerspectiveCamera( 55, viewportContainer.clientWidth / viewportContainer.clientHeight, 2, 2000 );
@@ -167,7 +232,9 @@ function initGUI2()
     gui2 = new dat.GUI({autoPlace: false});
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0)
     gui2.add(settings, "add");
+    gui2.add(settings, "to_lua");
     gui2.add(settings, "save");
+    gui2.add(settings, "load");
     if (selectedCloud != null)
     {
         // Scale.
@@ -183,6 +250,9 @@ function initGUI2()
         positionFolder.add(selectedCloud.position, "y").min(-1.0).max(1.0).step(0.05)
         positionFolder.add(selectedCloud.position, "z").min(-1.0).max(1.0).step(0.05)
         positionFolder.open();
+
+        gui2.add(selectedCloud, "attenuation").min(0.1).max(1.0).step(0.05);
+        gui2.add(selectedCloud, "textureIndex").min(0).max(5).step(1);
     }
     guiContainer = document.getElementById('gui');
     guiContainer.innerHTML = '';
