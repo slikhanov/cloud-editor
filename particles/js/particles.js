@@ -52,14 +52,17 @@ var SceneSettings = function()
                 stream.write(entry.scale.x.toFixed(2) + " * m, ");
                 stream.write(entry.scale.y.toFixed(2) + " * m}, ");
 
-                stream.write("texture = 13, edgeHardness = 100, orientation = 0, attenuation = ");
+                stream.write("texture = ");
+                stream.write(entry.textureIndex.toString());
+
+                stream.write(", edgeHardness = 100, orientation = 0, attenuation = ");
                 stream.write((entry.attenuation * 255).toString());
 
                 stream.write("},\n");
             });
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0, attenuation = ga }\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga }\n"); 
         stream.write("}\n");
     };
 
@@ -300,7 +303,7 @@ function onDocumentClick(event)
 {
     //mouseX = event.clientX - viewportContainer.clientWidth;
     //mouseY = event.clientY - viewportContainer.clientHeight;
-    performSelection(event.clientX - 250, event.clientY);
+    performSelection(event.clientX, event.clientY);
 }
 
 var testProjector = new THREE.Projector();

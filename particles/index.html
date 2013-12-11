@@ -15,10 +15,16 @@
     }
 
     #gl {
+        float: left;
         padding: 0px;
-        margin-left:250px;
         width: 650px;
         height: 400px;
+    }
+
+    #wrapper {
+        min-width: 900px;
+        overflow: hidden;
+        background: black;
     }
     </style>
 
@@ -28,8 +34,10 @@
     <script src="js/OrbitControls.js"></script>
   </head>
   <body>
-    <div id="gui"></div>
-    <div id="gl"></div>
+    <div id="wrapper">
+        <div id="gl"></div>
+        <div id="gui"></div>
+    </div>
     <script src="js/particles.js"></script>
   </body>
 </html>
