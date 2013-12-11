@@ -7,3 +7,4 @@ end
 task :run do
   `open particles.nw`
 end
+

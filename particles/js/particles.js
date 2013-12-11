@@ -165,9 +165,9 @@ function buildParticle(pos, scale, attenuation, textureIndex)
 
     cell._attenuation = attenuation;
     cell.__defineGetter__("attenuation", function() 
-            { 
-                return this._attenuation; 
-            });
+        { 
+            return this._attenuation; 
+        });
     cell.__defineSetter__("attenuation", function(val) { 
         this._attenuation = val; this.material.color.setRGB( val, val, val);
     });
