@@ -4,8 +4,8 @@
   "main": "index.html",
   "window": {
     "frame": true,
-    "width": 500,
-    "height": 400,
+    "width": 920,
+    "height": 500,
     "toolbar": true,
     "position": "center",
     "resizable": true

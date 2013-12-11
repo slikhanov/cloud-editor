@@ -4,8 +4,24 @@ if (!Detector.webgl)
 
 var SceneSettings = function()
 {
-    this.scale = 10.0;
+    this.scale = 50.0;
     this.positionx = 0.0;
+    this.add = function() 
+    {
+        var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
+        var planeMaterial = new THREE.MeshBasicMaterial( 
+                { color: 0xdddddd, shading: THREE.FlatShading, map: textures[0], transparent: true });
+        planeMaterial.depthWrite = false;
+
+        var cell = new THREE.Mesh(planeGeometry, planeMaterial);
+        cell.position.setX(0.0);
+        cell.position.setY(0.0);
+        cell.position.setZ(0.0);
+        cell.scale.set(0.2, 0.2, 0.2);
+        cell.grayness = Math.random();
+
+        cloud.add(cell);
+    };
 }
 
 var settings, gui;
@@ -13,38 +29,24 @@ var settings, gui;
 function initGUI()
 {
     settings = new SceneSettings();
-    //gui = new dat.GUI();
-    //gui.add(settings, "scale").min(1.0).max(100.0).step(1.0)
-    //gui.add(settings, "positionx").min(-10.0).max(10.0).step(1.0)
 }
 
 var viewportContainer;
 var guiContainer;
 
-var camera, scene, renderer, particles, geometry, material, i, h, color, sprite, size;
-var mouseX = 0, mouseY = 0;
-
-var windowHalfX = window.innerWidth / 2;
-var windowHalfY = window.innerHeight / 2;
-
-// Some experiments.
-function buildGeometry()
-{
-    var billboardGeometry = new THREE.Geometry();
-
-    // Setting up vertices.
-    billboardGeometry.vertices.push(new THREE.Vector3(-1.0, -1.0, 0.0));
-    billboardGeometry.vertices.push(new THREE.Vector3(-1.0, 1.0, 0.0));
-    billboardGeometry.vertices.push(new THREE.Vector3(1.0, 1.0, 0.0));
-    billboardGeometry.vertices.push(new THREE.Vector3(1.0, -1.0, 0.0));
-
-    // Setting up face(s).
-    billboardGeometry.faces.push(new THREE.Face3(0, 1, 2));
-    billboardGeometry.faces.push(new THREE.Face3(1, 2, 3));
-}
+var camera, scene, renderer, projector, particles, geometry, material, i, h, color, sprite, size;
 
 var billboard;
 var cloud;
+
+var textures = 
+[
+    THREE.ImageUtils.loadTexture("textures/001_ml.png"),
+    THREE.ImageUtils.loadTexture("textures/02_bPh.png"),
+    THREE.ImageUtils.loadTexture("textures/03_bPh.png"),
+    THREE.ImageUtils.loadTexture("textures/04_bPh.png"),
+    THREE.ImageUtils.loadTexture("textures/05_bPh.png")
+];
 
 var cloudArray = [
        [[0, 0, 3, 0],
@@ -76,7 +78,7 @@ var controls;
 
 function buildScene()
 {
-    camera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 2, 2000 );
+    camera = new THREE.PerspectiveCamera( 55, viewportContainer.clientWidth / viewportContainer.clientHeight, 2, 2000 );
     camera.position.z = 500;
 
     controls = new THREE.OrbitControls( camera );
@@ -85,16 +87,9 @@ function buildScene()
     scene = new THREE.Scene();
     //scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
 
-    var textures = 
-    [
-        THREE.ImageUtils.loadTexture("textures/001_ml.png"),
-        THREE.ImageUtils.loadTexture("textures/02_bPh.png"),
-        THREE.ImageUtils.loadTexture("textures/03_bPh.png"),
-        THREE.ImageUtils.loadTexture("textures/04_bPh.png"),
-        THREE.ImageUtils.loadTexture("textures/05_bPh.png")
-    ];
 
     cloud = new THREE.Object3D()
+/*
     for (layer = 0; layer < cloudArray.length; layer++)
     for (line = 0; line < cloudArray[layer].length; line++)
     {
@@ -118,7 +113,7 @@ function buildScene()
 
             cloud.add(cell);
         }
-    }
+    }*/
 
     scene.add(cloud);
 }
@@ -131,6 +126,7 @@ function initGUI2()
         gui2.destroy();
     gui2 = new dat.GUI({autoPlace: false});
     gui2.add(settings, "scale").min(1.0).max(100.0).step(1.0)
+    gui2.add(settings, "add");
     if (selectedCloud != null)
     {
         // Scale.
@@ -156,43 +152,41 @@ initGUI2();
 animate();
 render();
 
-var projector;
-
 function init() 
 {
     viewportContainer = document.getElementById('gl');
 
-    buildScene();
 
-    projector = new THREE.Projector();
+    buildScene();
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
     renderer.setClearColor(0x000000, 1);
     renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
     viewportContainer.appendChild( renderer.domElement );
 
-    document.addEventListener('mousemove', onDocumentMouseMove, false);
-    document.addEventListener('touchstart', onDocumentTouchStart, false);
-    document.addEventListener('touchmove', onDocumentTouchMove, false);
+    //document.addEventListener('mousemove', onDocumentMouseMove, false);
+    //document.addEventListener('touchstart', onDocumentTouchStart, false);
+    //document.addEventListener('touchmove', onDocumentTouchMove, false);
     document.addEventListener('click', onDocumentClick, false);
 
     window.addEventListener( 'resize', onWindowResize, false );
+    projector = new THREE.Projector();
 }
 
 function onWindowResize() 
 {
-    windowHalfX = viewportContainer.clientWidth / 2;
-    windowHalfY = viewportContainer.clientHeight / 2;
+    //windowHalfX = viewportContainer.clientWidth / 2;
+    //windowHalfY = viewportContainer.clientHeight / 2;
 
-    //camera.aspect =  / window.innerHeight;
+    camera.aspect =  viewportContainer.clientWidth / viewportContainer.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
 }
 
 function onDocumentClick(event) 
 {
-    mouseX = event.clientX - viewportContainer.clientWidth;
-    mouseY = event.clientY - viewportContainer.clientHeight;
+    //mouseX = event.clientX - viewportContainer.clientWidth;
+    //mouseY = event.clientY - viewportContainer.clientHeight;
     performSelection(event.clientX, event.clientY);
 }
 
@@ -201,28 +195,32 @@ var pickMouseVector = new THREE.Vector3();
 
 function onDocumentMouseMove(event) 
 {
-    mouseX = event.clientX - viewportContainer.clientWidth;
-    mouseY = event.clientY - viewportContainer.clientHeight;
+    //mouseX = event.clientX - viewportContainer.clientWidth;
+    //mouseY = event.clientY - viewportContainer.clientHeight;
 }
 
 function onDocumentTouchStart(event) 
 {
+/*
     if (event.touches.length == 1) 
     {
         event.preventDefault();
         mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
         mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
     }
+*/
 }
 
 function onDocumentTouchMove(event) 
 {
+/*
     if (event.touches.length == 1) 
     {
         event.preventDefault();
         mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
         mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
     }
+*/
 }
 
 //Selection support.
