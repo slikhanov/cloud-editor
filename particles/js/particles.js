@@ -22,6 +22,46 @@ var SceneSettings = function()
 
         cloud.add(cell);
     };
+
+    this.save = function()
+    {
+        var fs = require('fs');
+        var fileName = "/Users/brutal/clouds.txt";
+        var stream = fs.createWriteStream(fileName, {flags: 'w'});
+        var cnt = cloud.children.length;
+        stream.write("levels = {{0, ");
+        stream.write(cnt.toString());
+        stream.write("}, {");
+        stream.write(cnt.toString());
+        stream.write(", 1}, {");
+        stream.write((cnt + 1).toString());
+        stream.write(", 1}, {");
+        stream.write((cnt + 2).toString());
+        stream.write(", 1},\n"); 
+        stream.write("particleCount = ");
+        stream.write((cnt + 3).toString());
+        stream.write(",\n");
+        stream.write("particles = {\n");
+        cloud.children.forEach(function(entry)
+            {
+                stream.write("   { position = { ");
+                stream.write(entry.position.x.toFixed(2) + ", ");
+                stream.write(entry.position.y.toFixed(2) + ", ");
+                stream.write(entry.position.z.toFixed(2) + " }, ");
+
+                stream.write("size = { ");
+                stream.write(entry.scale.x.toFixed(2) + ", ");
+                stream.write(entry.scale.y.toFixed(2) + " }, ");
+
+                stream.write("texture = 13, edgeHardness = 100, orientation = 0");
+
+                stream.write("},\n");
+            });
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 },\n"); 
+        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 13, edgeHardness = 100, orientation = 0 }\n"); 
+        stream.write("}\n");
+    };
 }
 
 var settings, gui;
@@ -79,7 +119,7 @@ var controls;
 function buildScene()
 {
     camera = new THREE.PerspectiveCamera( 55, viewportContainer.clientWidth / viewportContainer.clientHeight, 2, 2000 );
-    camera.position.z = 500;
+    camera.position.z = 200;
 
     controls = new THREE.OrbitControls( camera );
     controls.addEventListener( 'change', render );
@@ -125,21 +165,24 @@ function initGUI2()
     if (gui2 != null)
         gui2.destroy();
     gui2 = new dat.GUI({autoPlace: false});
-    gui2.add(settings, "scale").min(1.0).max(100.0).step(1.0)
+    gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0)
     gui2.add(settings, "add");
+    gui2.add(settings, "save");
     if (selectedCloud != null)
     {
         // Scale.
         var scaleFolder = gui2.addFolder("Particle Scale");
-        scaleFolder.add(selectedCloud.scale, "x").min(0.1).max(7.0).step(0.1)
-        scaleFolder.add(selectedCloud.scale, "y").min(0.1).max(7.0).step(0.1)
-        scaleFolder.add(selectedCloud.scale, "z").min(0.1).max(7.0).step(0.1)
+        scaleFolder.add(selectedCloud.scale, "x").min(0.05).max(2.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "y").min(0.05).max(2.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "z").min(0.05).max(2.0).step(0.05)
+        scaleFolder.open();
 
         // Position.
         var positionFolder = gui2.addFolder("Particle Offset");
-        positionFolder.add(selectedCloud.position, "x").min(-3.0).max(3.0).step(0.1)
-        positionFolder.add(selectedCloud.position, "y").min(-3.0).max(3.0).step(0.1)
-        positionFolder.add(selectedCloud.position, "z").min(-3.0).max(3.0).step(0.1)
+        positionFolder.add(selectedCloud.position, "x").min(-1.0).max(1.0).step(0.05)
+        positionFolder.add(selectedCloud.position, "y").min(-1.0).max(1.0).step(0.05)
+        positionFolder.add(selectedCloud.position, "z").min(-1.0).max(1.0).step(0.05)
+        positionFolder.open();
     }
     guiContainer = document.getElementById('gui');
     guiContainer.innerHTML = '';
@@ -187,7 +230,7 @@ function onDocumentClick(event)
 {
     //mouseX = event.clientX - viewportContainer.clientWidth;
     //mouseY = event.clientY - viewportContainer.clientHeight;
-    performSelection(event.clientX, event.clientY);
+    performSelection(event.clientX - 250, event.clientY);
 }
 
 var testProjector = new THREE.Projector();
