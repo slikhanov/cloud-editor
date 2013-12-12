@@ -237,6 +237,8 @@ function initGUI2()
     if (gui2 != null)
         gui2.destroy();
     gui2 = new dat.GUI({autoPlace: false});
+
+    gui2.add(settings, "folderName");
     gui2.add(settings, "fileName");
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add");
