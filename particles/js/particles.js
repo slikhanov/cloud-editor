@@ -8,6 +8,7 @@ var SerializedParticle = function(particle)
     this.scale = particle.scale;
     this.attenuation = particle._attenuation;
     this.textureIndex = particle._textureIndex;
+    this.orientation = particle.orientation;
 }
 
 function GetSaveFileName()
@@ -30,15 +31,15 @@ var SceneSettings = function()
     this.fileName = "FairWeatherCumulus";
     this.scale = 50.0;
 
-    this.add = function() 
+    this.add_particle = function() 
     {
-        buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0);
+        buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0, 0);
         //cloud.add(cell);
         //selectedCloud = cell;
         initGUI2();
     };
 
-    this.delete = function()
+    this.remove_particle = function()
     {
         if (selectedCloud != null)
         {    
@@ -46,6 +47,21 @@ var SceneSettings = function()
             selectedCloud = null;
             initGUI2();
         }    
+    }
+
+    this.remove_all = function()
+    {
+        while (cloud.children.length > 0)
+            cloud.remove(cloud.children[0]);
+        selectedCloud = null;
+        initGUI2();
+    }
+
+    this.build_ground = function()
+    {
+        for (x = -1.0; x <= 1.0; x += 0.5)
+            for (y = -1.0; y <= 1.0; y += 0.5)
+                buildParticle(new THREE.Vector3(x, y, 0.0), new THREE.Vector3(0.7, 0.7, 0.7), 1.0, 2, 0);
     }
 
     this.to_lua = function()
@@ -81,7 +97,12 @@ var SceneSettings = function()
                 stream.write("texture = ");
                 stream.write(entry.textureIndex.toString());
 
-                stream.write(", edgeHardness = 100, orientation = 0, attenuation = ");
+                stream.write(", edgeHardness = 100, ");
+
+                stream.write("orientation = ");
+                stream.write(entry.orientation.toString());
+
+                stream.write(", attenuation = ");
                 stream.write((entry.attenuation * 255).toString());
 
                 stream.write("},\n");
@@ -116,7 +137,7 @@ var SceneSettings = function()
             var obj = JSON.parse(data);
             obj.forEach(function(entry)
             {
-                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex);
+                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
             });
         });
     };
@@ -175,7 +196,7 @@ function buildGrid()
     scene.add(grid);
 }
 
-function buildParticle(pos, scale, attenuation, textureIndex)
+function buildParticle(pos, scale, attenuation, textureIndex, orientation)
 {
     var col = new THREE.Color();
     col.setRGB(attenuation, attenuation, attenuation);
@@ -206,6 +227,8 @@ function buildParticle(pos, scale, attenuation, textureIndex)
     cell.__defineSetter__("textureIndex", function(val) { 
         this._textureIndex = val; this.material.map = textures[val];
     });
+
+    cell.orientation = orientation;
 
     cloud.add(cell);
 }
@@ -241,8 +264,10 @@ function initGUI2()
     gui2.add(settings, "folderName");
     gui2.add(settings, "fileName");
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
-    gui2.add(settings, "add");
-    gui2.add(settings, "delete");
+    gui2.add(settings, "add_particle");
+    gui2.add(settings, "remove_particle");
+    gui2.add(settings, "remove_all");
+    gui2.add(settings, "build_ground");
     gui2.add(settings, "to_lua");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
@@ -264,6 +289,8 @@ function initGUI2()
 
         gui2.add(selectedCloud, "attenuation").min(0.1).max(1.0).step(0.05);
         gui2.add(selectedCloud, "textureIndex").min(0).max(5).step(1);
+
+        gui2.add(selectedCloud, "orientation").min(0).max(1).step(1);
     }
     guiContainer = document.getElementById('gui');
     guiContainer.innerHTML = '';
@@ -283,13 +310,14 @@ function init()
     buildScene();
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x87CEFA, 1);
     renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
     viewportContainer.appendChild( renderer.domElement );
 
     buildControls();
 
     document.addEventListener('click', onDocumentClick, false);
+    document.addEventListener('keyup', onKeyUp, false);
     window.addEventListener( 'resize', onWindowResize, false );
 
     projector = new THREE.Projector();
@@ -305,6 +333,14 @@ function onWindowResize()
 function onDocumentClick(event) 
 {
     performSelection(event.clientX, event.clientY);
+}
+
+function onKeyUp(event)
+{
+    switch (event.keyCode) 
+    {
+        case 46: settings.remove_particle(); break;   
+    }
 }
 
 var testProjector = new THREE.Projector();
@@ -341,7 +377,13 @@ function render()
     grid.scale.set(settings.scale, settings.scale, settings.scale);
 
     cloud.scale.set(settings.scale, settings.scale, settings.scale);
-    cloud.children.forEach(function(entry){ entry.rotation.setFromRotationMatrix( camera.matrix ); });
+    cloud.children.forEach(function(entry)
+            { 
+                if (entry.orientation == 0) 
+                    entry.rotation.setFromRotationMatrix( camera.matrix ); 
+                else
+                    entry.rotation.set(0.0, 0.0, 0.0);
+            });
     renderer.render( scene, camera );
 }
 
