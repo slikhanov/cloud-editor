@@ -12,24 +12,24 @@ var SerializedParticle = function(particle)
 
 function GetSaveFileName()
 {
-    if (process.platform == 'win32')
-        return 'c:/Users/slikhan/Desktop/CloudsScene.txt';
-    if (process.platform == 'darwin')
-        return '/Users/brutal/Desktop/CloudsScene.txt';
+    return settings.folderName + settings.fileName + '.txt';
 }
 
 function GetExportFileName()
 {
-    if (process.platform == 'win32')
-        return 'c:/Users/slikhan/Desktop/CloudsExport.txt';
-    if (process.platform == 'darwin')
-        return '/Users/brutal/Desktop/CloudsExport.txt';
+    return settings.folderName + settings.fileName + '.Export.txt';
 }
 
 var SceneSettings = function()
 {
+    if (process.platform == 'win32')
+        this.folderName = 'c:/Users/slikhan/Desktop/';
+    else
+        this.folderName = '/Users/brutal/Desktop/';
+
+    this.fileName = "FairWeatherCumulus";
     this.scale = 50.0;
-    this.positionx = 0.0;
+
     this.add = function() 
     {
         buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0);
@@ -38,10 +38,20 @@ var SceneSettings = function()
         initGUI2();
     };
 
+    this.delete = function()
+    {
+        if (selectedCloud != null)
+        {    
+            cloud.remove(selectedCloud);
+            selectedCloud = null;
+            initGUI2();
+        }    
+    }
+
     this.to_lua = function()
     {
         var fs = require('fs');
-        var fileName = GetExportFileName();//"/Users/brutal/clouds.txt";
+        var fileName = GetExportFileName();
         var stream = fs.createWriteStream(fileName, {flags: 'w'});
         var cnt = cloud.children.length;
         stream.write("levels = {{0, ");
@@ -109,7 +119,6 @@ var SceneSettings = function()
                 buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex);
             });
         });
-
     };
 }
 
@@ -125,8 +134,8 @@ var guiContainer;
 
 var camera, scene, renderer, projector, particles, geometry, material, i, h, color, sprite, size;
 
-var billboard;
 var cloud;
+var grid;
 
 var textures = 
 [
@@ -143,33 +152,28 @@ var textures =
     THREE.ImageUtils.loadTexture("textures/010.png"),
 ];
 
-var cloudArray = [
-       [[0, 0, 3, 0],
-        [1, 0, 0, 5],
-        [1, 0, 0, 1],
-        [1, 0, 3, 0],
-        [0, 4, 1, 0]],
-
-       [[0, 0, 1, 0],
-        [1, 3, 0, 1],
-        [2, 0, 0, 3],
-        [1, 0, 0, 0],
-        [0, 5, 2, 0]],
-
-       [[0, 0, 3, 0],
-        [2, 4, 2, 1],
-        [4, 0, 0, 1],
-        [0, 1, 2, 1],
-        [0, 3, 0, 0]],
-
-       [[0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0]]
-];
-
 var controls;
+
+function buildGrid()
+{
+    grid = new THREE.Object3D();
+    var lineMaterial = new THREE.LineBasicMaterial( { color: '#aaa' });
+    for (i = -1.0; i <= 1.0; i+= 0.1)
+    {
+        var lineXGeometry = new THREE.Geometry();
+        lineXGeometry.vertices.push(new THREE.Vector3(i, -1.0, 0.0));
+        lineXGeometry.vertices.push(new THREE.Vector3(i, 1.0, 0.0));
+        var lineX = new THREE.Line(lineXGeometry, lineMaterial);
+        grid.add(lineX);    
+
+        var lineYGeometry = new THREE.Geometry();
+        lineYGeometry.vertices.push(new THREE.Vector3(-1.0, i, 0.0));
+        lineYGeometry.vertices.push(new THREE.Vector3(1.0, i, 0.0));
+        var lineY = new THREE.Line(lineYGeometry, lineMaterial);
+        grid.add(lineY);    
+    }
+    scene.add(grid);
+}
 
 function buildParticle(pos, scale, attenuation, textureIndex)
 {
@@ -206,45 +210,23 @@ function buildParticle(pos, scale, attenuation, textureIndex)
     cloud.add(cell);
 }
 
+function buildControls()
+{
+    controls = new THREE.OrbitControls(camera, renderer.domElement );
+    controls.addEventListener( 'change', render );
+}
+
 function buildScene()
 {
     camera = new THREE.PerspectiveCamera( 55, viewportContainer.clientWidth / viewportContainer.clientHeight, 2, 2000 );
     camera.position.z = 200;
 
-    controls = new THREE.OrbitControls( camera );
-    controls.addEventListener( 'change', render );
-
     scene = new THREE.Scene();
     //scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
 
+    buildGrid();
 
     cloud = new THREE.Object3D()
-/*
-    for (layer = 0; layer < cloudArray.length; layer++)
-    for (line = 0; line < cloudArray[layer].length; line++)
-    {
-        for (pos = 0; pos < cloudArray[layer][line].length; pos++)
-        {
-            if (cloudArray[layer][line][pos] == 0)
-                continue;
-
-            var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-            var planeMaterial = new THREE.MeshBasicMaterial( 
-            { color: 0xdddddd, shading: THREE.FlatShading, map: textures[cloudArray[layer][line][pos] - 1], transparent: true });
-            planeMaterial.depthWrite = false;
-
-            var cell = new THREE.Mesh(planeGeometry, planeMaterial);
-            cell.position.setX(line - cloudArray[layer].length * 0.5);
-            cell.position.setY(pos - cloudArray[layer][line].length * 0.5);
-            cell.position.setZ(layer);
-            cell.scale.set(1.5, 1.5, 1.5);
-            cell.grayness = Math.random();
-                
-
-            cloud.add(cell);
-        }
-    }*/
-
     scene.add(cloud);
 }
 
@@ -255,8 +237,10 @@ function initGUI2()
     if (gui2 != null)
         gui2.destroy();
     gui2 = new dat.GUI({autoPlace: false});
-    gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0)
+    gui2.add(settings, "fileName");
+    gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add");
+    gui2.add(settings, "delete");
     gui2.add(settings, "to_lua");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
@@ -294,7 +278,6 @@ function init()
 {
     viewportContainer = document.getElementById('gl');
 
-
     buildScene();
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
@@ -302,20 +285,16 @@ function init()
     renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
     viewportContainer.appendChild( renderer.domElement );
 
-    //document.addEventListener('mousemove', onDocumentMouseMove, false);
-    //document.addEventListener('touchstart', onDocumentTouchStart, false);
-    //document.addEventListener('touchmove', onDocumentTouchMove, false);
-    document.addEventListener('click', onDocumentClick, false);
+    buildControls();
 
+    document.addEventListener('click', onDocumentClick, false);
     window.addEventListener( 'resize', onWindowResize, false );
+
     projector = new THREE.Projector();
 }
 
 function onWindowResize() 
 {
-    //windowHalfX = viewportContainer.clientWidth / 2;
-    //windowHalfY = viewportContainer.clientHeight / 2;
-
     camera.aspect =  viewportContainer.clientWidth / viewportContainer.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight );
@@ -323,46 +302,13 @@ function onWindowResize()
 
 function onDocumentClick(event) 
 {
-    //mouseX = event.clientX - viewportContainer.clientWidth;
-    //mouseY = event.clientY - viewportContainer.clientHeight;
     performSelection(event.clientX, event.clientY);
 }
 
 var testProjector = new THREE.Projector();
 var pickMouseVector = new THREE.Vector3();
 
-function onDocumentMouseMove(event) 
-{
-    //mouseX = event.clientX - viewportContainer.clientWidth;
-    //mouseY = event.clientY - viewportContainer.clientHeight;
-}
-
-function onDocumentTouchStart(event) 
-{
-/*
-    if (event.touches.length == 1) 
-    {
-        event.preventDefault();
-        mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
-        mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
-    }
-*/
-}
-
-function onDocumentTouchMove(event) 
-{
-/*
-    if (event.touches.length == 1) 
-    {
-        event.preventDefault();
-        mouseX = event.touches[ 0 ].pageX - viewportContainer.clientWidth;
-        mouseY = event.touches[ 0 ].pageY - viewportContainer.clientHeight;
-    }
-*/
-}
-
 //Selection support.
-
 var selectedCloud;
 
 function performSelection(x, y)
@@ -379,8 +325,6 @@ function performSelection(x, y)
     }
 }
 
-//
-
 function animate() 
 {
     requestAnimationFrame(animate);
@@ -390,9 +334,12 @@ function animate()
 
 function render() 
 {
-    var time = Date.now() * 0.00005;
+    //var time = Date.now() * 0.00005;
+
+    grid.scale.set(settings.scale, settings.scale, settings.scale);
+
     cloud.scale.set(settings.scale, settings.scale, settings.scale);
-    cloud.children.forEach(function(entry){ entry.rotation.setFromRotationMatrix( camera.matrix );});
+    cloud.children.forEach(function(entry){ entry.rotation.setFromRotationMatrix( camera.matrix ); });
     renderer.render( scene, camera );
 }
 
