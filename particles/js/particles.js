@@ -4,8 +4,8 @@ if (!Detector.webgl)
 
 var SerializedParticle = function(particle)
 {
-    this.position = particle.position;
-    this.scale = particle.scale;
+    this.position = new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z);
+    this.scale = new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z);
     this.attenuation = particle._attenuation;
     this.textureIndex = particle._textureIndex;
     this.orientation = particle.orientation;
@@ -34,8 +34,8 @@ var SceneSettings = function()
     this.add_particle = function() 
     {
         buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0, 0);
-        //cloud.add(cell);
-        //selectedCloud = cell;
+        selectedCloud = cloud.children[cloud.children.length - 1];
+        markSelected();
         initGUI2();
     };
 
@@ -55,6 +55,29 @@ var SceneSettings = function()
             cloud.remove(cloud.children[0]);
         selectedCloud = null;
         initGUI2();
+    }
+
+    this.clone_particle = function()
+    {
+        if (selectedCloud != null)
+        { 
+            var serialized = new SerializedParticle(selectedCloud);
+            unmarkSelected();
+            selectedCloud = null
+
+            buildParticle(
+                    serialized.position, 
+                    serialized.scale, 
+                    serialized.attenuation,
+                    serialized.textureIndex,
+                    serialized.orientation);
+
+
+            selectedCloud = cloud.children[cloud.children.length - 1];
+            markSelected();
+
+            initGUI2();
+        }    
     }
 
     this.build_ground = function()
@@ -178,7 +201,7 @@ var controls;
 function buildGrid()
 {
     grid = new THREE.Object3D();
-    var lineMaterial = new THREE.LineBasicMaterial( { color: '#aaa' });
+    var lineMaterial = new THREE.LineBasicMaterial( { color: '#ccc' });
     for (i = -1.0; i <= 1.0; i+= 0.1)
     {
         var lineXGeometry = new THREE.Geometry();
@@ -265,6 +288,7 @@ function initGUI2()
     gui2.add(settings, "fileName");
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add_particle");
+    gui2.add(settings, "clone_particle");
     gui2.add(settings, "remove_particle");
     gui2.add(settings, "remove_all");
     gui2.add(settings, "build_ground");
@@ -358,9 +382,26 @@ function performSelection(x, y)
     var intersects = testRaycaster.intersectObjects( cloud.children );
     if (intersects.length > 0)
     {
+        if (selectedCloud)
+            unmarkSelected();
+
         selectedCloud = intersects[0].object;
+        markSelected();
         initGUI2();
     }
+}
+
+function markSelected()
+{
+    selectedCloud.add( new THREE.Mesh(
+            new THREE.CubeGeometry(0.05, 0.05, 0.05),
+            new THREE.MeshBasicMaterial({color: '#f00'})));
+}
+
+function unmarkSelected()
+{
+    if (selectedCloud.children.length > 0)
+        selectedCloud.remove(selectedCloud.children[0]);
 }
 
 function animate() 
