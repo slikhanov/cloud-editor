@@ -183,17 +183,22 @@ var grid;
 
 var textures = 
 [
-    THREE.ImageUtils.loadTexture("textures/000.png"),
-    THREE.ImageUtils.loadTexture("textures/001.png"),
-    THREE.ImageUtils.loadTexture("textures/002.png"),
-    THREE.ImageUtils.loadTexture("textures/003.png"),
-    THREE.ImageUtils.loadTexture("textures/004.png"),
-    THREE.ImageUtils.loadTexture("textures/005.png"),
-    THREE.ImageUtils.loadTexture("textures/006.png"),
-    THREE.ImageUtils.loadTexture("textures/007.png"),
-    THREE.ImageUtils.loadTexture("textures/008.png"),
-    THREE.ImageUtils.loadTexture("textures/009.png"),
-    THREE.ImageUtils.loadTexture("textures/010.png"),
+    THREE.ImageUtils.loadTexture("textures/00_000.png"),
+    THREE.ImageUtils.loadTexture("textures/00_001.png"),
+    THREE.ImageUtils.loadTexture("textures/00_002.png"),
+    THREE.ImageUtils.loadTexture("textures/00_003.png"),
+    THREE.ImageUtils.loadTexture("textures/00_004.png"),
+    THREE.ImageUtils.loadTexture("textures/00_005.png"),
+    THREE.ImageUtils.loadTexture("textures/00_006.png"),
+    THREE.ImageUtils.loadTexture("textures/00_007.png"),
+    THREE.ImageUtils.loadTexture("textures/00_008.png"),
+    THREE.ImageUtils.loadTexture("textures/00_009.png"),
+    THREE.ImageUtils.loadTexture("textures/01_001.png"),
+    THREE.ImageUtils.loadTexture("textures/01_006.png"),
+    THREE.ImageUtils.loadTexture("textures/01_007.png"),
+    THREE.ImageUtils.loadTexture("textures/01_008.png"),
+    THREE.ImageUtils.loadTexture("textures/01_009.png"),
+    THREE.ImageUtils.loadTexture("textures/01_010.png"),
 ];
 
 var controls;
@@ -312,7 +317,7 @@ function initGUI2()
         positionFolder.open();
 
         gui2.add(selectedCloud, "attenuation").min(0.1).max(1.0).step(0.05);
-        gui2.add(selectedCloud, "textureIndex").min(0).max(5).step(1);
+        gui2.add(selectedCloud, "textureIndex").min(0).max(textures.length - 1).step(1);
 
         gui2.add(selectedCloud, "orientation").min(0).max(1).step(1);
     }
