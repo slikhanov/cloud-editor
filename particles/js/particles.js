@@ -21,18 +21,22 @@ function GetExportFileName()
     return settings.folderName + settings.fileName + '.Export.txt';
 }
 
+function getUserHome() {
+  return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+}
+
 var SceneSettings = function()
 {
-    if (process.platform == 'win32')
-        this.folderName = 'c:/Users/slikhan/Desktop/';
-    else
-        this.folderName = '/Users/brutal/Desktop/';
+    this.folderName = getUserHome() + '/Desktop/CloudLibrary/';
+    this.textureFolderName = this.folderName + '/textures/';
 
     this.fileName = "FairWeatherCumulus";
     this.scale = 50.0;
 
     this.add_particle = function() 
     {
+        unmarkSelected();
+        selectedCloud = null
         buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0, 0);
         selectedCloud = cloud.children[cloud.children.length - 1];
         markSelected();
@@ -181,25 +185,20 @@ var camera, scene, renderer, projector, particles, geometry, material, i, h, col
 var cloud;
 var grid;
 
-var textures = 
-[
-    THREE.ImageUtils.loadTexture("textures/00_000.png"),
-    THREE.ImageUtils.loadTexture("textures/00_001.png"),
-    THREE.ImageUtils.loadTexture("textures/00_002.png"),
-    THREE.ImageUtils.loadTexture("textures/00_003.png"),
-    THREE.ImageUtils.loadTexture("textures/00_004.png"),
-    THREE.ImageUtils.loadTexture("textures/00_005.png"),
-    THREE.ImageUtils.loadTexture("textures/00_006.png"),
-    THREE.ImageUtils.loadTexture("textures/00_007.png"),
-    THREE.ImageUtils.loadTexture("textures/00_008.png"),
-    THREE.ImageUtils.loadTexture("textures/00_009.png"),
-    THREE.ImageUtils.loadTexture("textures/01_001.png"),
-    THREE.ImageUtils.loadTexture("textures/01_006.png"),
-    THREE.ImageUtils.loadTexture("textures/01_007.png"),
-    THREE.ImageUtils.loadTexture("textures/01_008.png"),
-    THREE.ImageUtils.loadTexture("textures/01_009.png"),
-    THREE.ImageUtils.loadTexture("textures/01_010.png"),
-];
+var textures = [];
+
+function loadTextures() 
+{
+    var fs = require('fs');
+    fs.readdir(settings.textureFolderName, function(err, files)
+        {
+            if (err) return;
+            files.forEach(function(entry)
+                {
+                    textures.push(THREE.ImageUtils.loadTexture(settings.textureFolderName + entry));
+                });
+        });
+}
 
 var vertexShader = 
 [
@@ -213,9 +212,12 @@ var vertexShader =
 var fragmentShader = 
 [
     "uniform sampler2D textureMap;",
+    "uniform float attenuation;",
     "varying vec2 vUv;",
     "void main() {",
-        "gl_FragColor = texture2D(textureMap, vUv);",
+        "vec4 color = texture2D(textureMap, vUv);",
+        "color *= attenuation;",
+        "gl_FragColor = color;",
     "}"
 ].join("\n");
 
@@ -242,9 +244,6 @@ function buildGrid()
     scene.add(grid);
 }
 
-
-
-
 function buildParticle(pos, scale, attenuation, textureIndex, orientation)
 {
     var col = new THREE.Color();
@@ -258,6 +257,7 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
     planeMaterial.transparent = true;
     planeMaterial.depthWrite = false;
     planeMaterial.uniforms.textureMap = {type: "t", value: textures[textureIndex] };
+    planeMaterial.uniforms.attenuation = {type: "f", value: attenuation };
 
     var cell = new THREE.Mesh(planeGeometry, planeMaterial);
     cell.position = pos;
@@ -270,7 +270,7 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
             return this._attenuation; 
         });
     cell.__defineSetter__("attenuation", function(val) { 
-        this._attenuation = val; this.material.color.setRGB( val, val, val);
+        this._attenuation = val; this.material.uniforms.attenuation.value = val;
     });
 
     cell._textureIndex = textureIndex;
@@ -354,6 +354,7 @@ function initGUI2()
 
 init();
 initGUI();
+loadTextures();
 initGUI2();
 animate();
 render();
