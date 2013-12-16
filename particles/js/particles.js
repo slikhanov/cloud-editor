@@ -201,6 +201,24 @@ var textures =
     THREE.ImageUtils.loadTexture("textures/01_010.png"),
 ];
 
+var vertexShader = 
+[
+    "varying vec2 vUv;",
+    "void main() {",
+        "vUv = uv;",
+        "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+    "}"
+].join("\n");
+
+var fragmentShader = 
+[
+    "uniform sampler2D textureMap;",
+    "varying vec2 vUv;",
+    "void main() {",
+        "gl_FragColor = texture2D(textureMap, vUv);",
+    "}"
+].join("\n");
+
 var controls;
 
 function buildGrid()
@@ -224,14 +242,22 @@ function buildGrid()
     scene.add(grid);
 }
 
+
+
+
 function buildParticle(pos, scale, attenuation, textureIndex, orientation)
 {
     var col = new THREE.Color();
     col.setRGB(attenuation, attenuation, attenuation);
     var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-    var planeMaterial = new THREE.MeshBasicMaterial( 
+    /*var planeMaterial = new THREE.MeshBasicMaterial( 
             { color: col, shading: THREE.FlatShading, map: textures[textureIndex], transparent: true, vertexColors: true });
+            */
+    var planeMaterial = new THREE.ShaderMaterial(
+            {vertexShader: vertexShader, fragmentShader:fragmentShader});
+    planeMaterial.transparent = true;
     planeMaterial.depthWrite = false;
+    planeMaterial.uniforms.textureMap = {type: "t", value: textures[textureIndex] };
 
     var cell = new THREE.Mesh(planeGeometry, planeMaterial);
     cell.position = pos;
@@ -253,7 +279,7 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
                 return this._textureIndex; 
             });
     cell.__defineSetter__("textureIndex", function(val) { 
-        this._textureIndex = val; this.material.map = textures[val];
+        this._textureIndex = val; this.material.uniforms.textureMap.value = textures[val];
     });
 
     cell.orientation = orientation;
