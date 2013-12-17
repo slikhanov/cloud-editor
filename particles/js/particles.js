@@ -13,16 +13,87 @@ var SerializedParticle = function(particle)
 
 function GetSaveFileName()
 {
-    return settings.folderName + settings.fileName + '.txt';
+    return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' +  settings.fileName + '.txt';
 }
 
 function GetExportFileName()
 {
-    return settings.folderName + settings.fileName + '.Export.txt';
+    return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' + settings.fileName + '.Export.txt';
 }
 
 function getUserHome() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+}
+
+var libraryStructure = 
+[
+    { type: "LowClouds", kinds : [
+        "FairWeatherCumulus",
+        "BrokenSwellingCumulusCongestus",
+        "ScatteredCumulonimbusAndScatteredToBrokenCumulusCongestus",
+        "WidespreadCumulusCongestusAndCumulonimbus",
+        "BrokenStratocumulus",
+        "OvercastStratocumulus",
+        "PatchyStratus",
+        "Stratus",
+        "Nimbostratus",
+        "NimbostratusWithEmbeddedCumulonimbus"
+    ]},
+    { type: "MiddleClouds", kinds : [
+        "ScatteredAltocumulus",
+        "BrokenAltocumulus",
+        "PatchyAltostratus",
+        "Altostratus",
+        "Nimbostratus",
+        "Cumulonimbus"
+    ]},
+    { type: "HighClouds", kinds : [
+        "ScatteredCirrus",
+        "ScatteredCirrocumulus",
+        "BrokenCirrocumulus",
+        "PatchyCirrostratus",
+        "Cirrostratus",
+        "Cumulonimbus",
+        "AnvilFromCumulonimbus"
+    ]}
+];
+
+function createDir(dirName)
+{
+    var fs = require('fs');
+    fs.stat(dirName, function(err, stat)
+    {
+        if (err || !stat.isDirectory())
+        {
+            fs.mkdir(dirName, function(err) {
+                if (err) alert(err);
+            });
+        }
+    });
+}
+
+function findIndexByCloudType(cloudType)
+{
+    for (index = 0; index < libraryStructure.length; ++index)
+    {
+        if (libraryStructure[index].type == cloudType)
+            return index;
+    } 
+    return 0;
+}
+
+function buildLibrary()
+{   
+    createDir(settings.folderName);
+    createDir(settings.textureFolderName);
+    libraryStructure.forEach(function(entry)
+    {
+        createDir(settings.folderName + entry.type);
+        entry.kinds.forEach(function(kind)
+        {
+            createDir(settings.folderName + entry.type + '/' + kind);
+        });
+    });
 }
 
 var SceneSettings = function()
@@ -30,7 +101,12 @@ var SceneSettings = function()
     this.folderName = getUserHome() + '/Desktop/CloudLibrary/';
     this.textureFolderName = this.folderName + '/textures/';
 
-    this.fileName = "FairWeatherCumulus";
+    var cloudTypes = [];
+    libraryStructure.forEach(function(entry) {cloudTypes.push(entry.type);});
+    this.cloudType = cloudTypes[0];
+    this.rqtType = libraryStructure[findIndexByCloudType(this.cloudType)].kinds[0];
+
+    this.fileName = "00";
     this.scale = 50.0;
 
     this.add_particle = function() 
@@ -76,7 +152,6 @@ var SceneSettings = function()
                     serialized.textureIndex,
                     serialized.orientation);
 
-
             selectedCloud = cloud.children[cloud.children.length - 1];
             markSelected();
 
@@ -89,6 +164,28 @@ var SceneSettings = function()
         for (x = -1.0; x <= 1.0; x += 0.5)
             for (y = -1.0; y <= 1.0; y += 0.5)
                 buildParticle(new THREE.Vector3(x, y, 0.0), new THREE.Vector3(0.7, 0.7, 0.7), 1.0, 2, 0);
+    }
+
+    this.export_all = function()
+    {
+        var fs = require('fs');
+        var fileName = GetExportFileName();
+        var stream = fs.createWriteStream(fileName, {flags: 'w'});
+        // Header information.        
+        stream.write("m = 0.25\n");
+        stream.write("ga = 140\n");
+        stream.write("eh = 100\n");
+
+        libraryStructure.forEach(function(entry) {
+            stream.write(entry.type + " =\n");
+            stream.write("{\n");
+            entry.kinds.forEach(function(kind) {
+                stream.write(kind + " =\n");
+                stream.write("{\n");
+                stream.write("}\n");
+            });
+            stream.write("}\n");
+        });        
     }
 
     this.to_lua = function()
@@ -175,6 +272,8 @@ var settings, gui;
 function initGUI()
 {
     settings = new SceneSettings();
+    buildLibrary();
+    loadTextures();
 }
 
 var viewportContainer;
@@ -216,7 +315,7 @@ var fragmentShader =
     "varying vec2 vUv;",
     "void main() {",
         "vec4 color = texture2D(textureMap, vUv);",
-        "color *= attenuation;",
+        "color.rgb *= attenuation;",
         "gl_FragColor = color;",
     "}"
 ].join("\n");
@@ -253,7 +352,7 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
             { color: col, shading: THREE.FlatShading, map: textures[textureIndex], transparent: true, vertexColors: true });
             */
     var planeMaterial = new THREE.ShaderMaterial(
-            {vertexShader: vertexShader, fragmentShader:fragmentShader});
+            {vertexShader: vertexShader, fragmentShader:fragmentShader, side: THREE.DoubleSide});
     planeMaterial.transparent = true;
     planeMaterial.depthWrite = false;
     planeMaterial.uniforms.textureMap = {type: "t", value: textures[textureIndex] };
@@ -316,6 +415,18 @@ function initGUI2()
     gui2 = new dat.GUI({autoPlace: false});
 
     gui2.add(settings, "folderName");
+    var cloudTypes = [];
+    libraryStructure.forEach(function(entry) {cloudTypes.push(entry.type);});
+    var cloudTypeController = gui2.add(settings, "cloudType", cloudTypes); 
+    cloudTypeController.onChange(function(value) {
+        initGUI2();
+    });
+     
+
+    var rqtTypes = [];
+    libraryStructure[findIndexByCloudType(settings.cloudType)].kinds.forEach(function(entry) {rqtTypes.push(entry); });
+    gui2.add(settings, "rqtType", rqtTypes);
+
     gui2.add(settings, "fileName");
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add_particle");
@@ -324,6 +435,7 @@ function initGUI2()
     gui2.add(settings, "remove_all");
     gui2.add(settings, "build_ground");
     gui2.add(settings, "to_lua");
+    gui2.add(settings, "export_all");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
     if (selectedCloud != null)
@@ -354,7 +466,6 @@ function initGUI2()
 
 init();
 initGUI();
-loadTextures();
 initGUI2();
 animate();
 render();
@@ -432,7 +543,7 @@ function markSelected()
 
 function unmarkSelected()
 {
-    if (selectedCloud.children.length > 0)
+    if (selectedCloud != null && selectedCloud.children.length > 0)
         selectedCloud.remove(selectedCloud.children[0]);
 }
 
