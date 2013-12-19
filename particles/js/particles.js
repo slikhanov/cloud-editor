@@ -8,6 +8,8 @@ var SerializedParticle = function(particle)
     this.scale = new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z);
     this.attenuation = particle._attenuation;
     this.textureIndex = particle._textureIndex;
+    var path = require('path');
+    this.textureFile = path.basename(textures[particle._textureIndex].sourceFile);
     this.orientation = particle.orientation;
 }
 
@@ -182,6 +184,32 @@ var SceneSettings = function()
             entry.kinds.forEach(function(kind) {
                 stream.write(kind + " =\n");
                 stream.write("{\n");
+
+                // Get file list for further processing.
+                fs.readdir(settings.textureFolderName, function(err, files)
+                {
+                    if (!err)
+                    {
+                        stream.write("templateCount = " + files.length.toString());
+                        stream.write(", templates = {\n");
+                        files.forEach(function(file)
+                        {
+                            var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
+                            fs.readFile(fileName, function(err, data)
+                                {
+                                    if (err) return;
+                                    var obj = JSON.parse(data);
+
+                                    obj.forEach(function(entry)
+            {
+                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
+            });
+        });
+                        });
+                        stream.write("}\n");
+                    }
+                });
+
                 stream.write("}\n");
             });
             stream.write("}\n");
@@ -261,6 +289,7 @@ var SceneSettings = function()
             var obj = JSON.parse(data);
             obj.forEach(function(entry)
             {
+                resolveTextureFields(entry);
                 buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
             });
         });
@@ -297,6 +326,28 @@ function loadTextures()
                     textures.push(THREE.ImageUtils.loadTexture(settings.textureFolderName + entry));
                 });
         });
+}
+
+function resolveTextureFields(entry)
+{
+    if (!entry.hasOwnProperty('textureFile'))
+    {
+        var path = require('path');
+        entry.textureFile = path.basename(textures[entry.textureIndex].sourceFile);
+    }
+
+    entry.textureIndex = findTextureIndex(entry.textureFile);
+}
+
+function findTextureIndex(textureFile)
+{
+    var path = require('path');
+    for (idx = 0; idx < textures.length; ++idx)
+    {
+        if (path.basename(textures[idx].sourceFile) == textureFile)
+            return idx;
+    }
+    return 0;
 }
 
 var vertexShader = 
