@@ -88,6 +88,7 @@ function buildLibrary()
 {   
     createDir(settings.folderName);
     createDir(settings.textureFolderName);
+    createDir(settings.textureExportFolderName);
     libraryStructure.forEach(function(entry)
     {
         createDir(settings.folderName + entry.type);
@@ -102,6 +103,7 @@ var SceneSettings = function()
 {
     this.folderName = getUserHome() + '/Desktop/CloudLibrary/';
     this.textureFolderName = this.folderName + '/textures/';
+    this.textureExportFolderName = this.folderName + '/textures_export/';
 
     var cloudTypes = [];
     libraryStructure.forEach(function(entry) {cloudTypes.push(entry.type);});
@@ -216,6 +218,39 @@ var SceneSettings = function()
         });        
     }
 
+    this.optimize_textures = function()
+    {
+        var fs = require('fs');
+        libraryStructure.forEach(function(entry) {
+            entry.kinds.forEach(function(kind) {
+                // Get file list for further processing.
+                fs.readdir(settings.folderName + entry.type + '/' + kind + '/', function(err, files)
+                {
+                    if (!err)
+                    {
+                        files.forEach(function(file)
+                        {
+                            var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
+                            fs.readFile(fileName, function(err, data)
+                                {
+                                    if (err) return;
+                                    var obj = JSON.parse(data);
+
+                                    obj.forEach(function(entry)
+                                        {
+                                            resolveTextureFields(entry);
+                                            var src = settings.textureFolderName + entry.textureFile;
+                                            var dst = settings.textureExportFolderName + entry.textureFile;
+                                            fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
+                                        });
+                                });
+                        });
+                    }
+                });
+            });
+        });        
+    }
+
     this.to_lua = function()
     {
         var fs = require('fs');
@@ -289,6 +324,8 @@ var SceneSettings = function()
             var obj = JSON.parse(data);
             obj.forEach(function(entry)
             {
+                if (!entry.hasOwnProperty('orientation'))
+                    entry.orientation = 0;
                 resolveTextureFields(entry);
                 buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
             });
@@ -486,7 +523,7 @@ function initGUI2()
     gui2.add(settings, "remove_all");
     gui2.add(settings, "build_ground");
     gui2.add(settings, "to_lua");
-    gui2.add(settings, "export_all");
+    gui2.add(settings, "optimize_textures");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
     if (selectedCloud != null)
