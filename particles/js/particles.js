@@ -15,7 +15,10 @@ var SerializedParticle = function(particle)
 
 function GetSaveFileName()
 {
-    return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' +  settings.fileName + '.txt';
+    return settings.folderName + settings.cloudType + '/' + 
+            settings.rqtType + '/' +  
+            settings.fileName + '.' + 
+            settings.level.toString() + '.txt';
 }
 
 function GetExportFileName()
@@ -111,6 +114,7 @@ var SceneSettings = function()
     this.rqtType = libraryStructure[findIndexByCloudType(this.cloudType)].kinds[0];
 
     this.fileName = "00";
+    this.level = 0;
     this.scale = 50.0;
 
     this.add_particle = function() 
@@ -188,29 +192,23 @@ var SceneSettings = function()
                 stream.write("{\n");
 
                 // Get file list for further processing.
-                fs.readdir(settings.textureFolderName, function(err, files)
-                {
-                    if (!err)
+                var folderName = settings.folderName + entry.type + '/' + kind + '/';
+                var files = fs.readdirSync(folderName);
+                var template_files = [];
+                var template_levels = [];
+                files.forEach(function(file)
                     {
-                        stream.write("templateCount = " + files.length.toString());
-                        stream.write(", templates = {\n");
-                        files.forEach(function(file)
+                        var fileNameMatch = file.match(/(.*)\.\d\.txt/);
+                        if (fileNameMatch != null)
                         {
-                            var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
-                            fs.readFile(fileName, function(err, data)
-                                {
-                                    if (err) return;
-                                    var obj = JSON.parse(data);
-
-                                    obj.forEach(function(entry)
-            {
-                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
-            });
-        });
-                        });
-                        stream.write("}\n");
-                    }
-                });
+                            if (templates.indexOf(fileNameMatch[1]) <= -1)
+                            {
+                                templates[fileNameMatch[1]] = new Array();
+                            }
+                            templates[fileNameMatch[1]].push(file);    
+                        }
+                    });
+                stream.write("templateCount = " + templates.length.toString() + "\n");
 
                 stream.write("}\n");
             });
@@ -309,7 +307,7 @@ var SceneSettings = function()
         });
 
         var fs = require('fs');
-        var fileName = GetSaveFileName();//"/Users/brutal/cloudsSave.txt";
+        var fileName = GetSaveFileName();
         var stream = fs.createWriteStream(fileName, {flags: 'w'});
         stream.write(JSON.stringify(serializedParticles));
     };
@@ -317,7 +315,7 @@ var SceneSettings = function()
     this.load = function()
     {
         var fs = require('fs');
-        var fileName = GetSaveFileName();//"/Users/brutal/cloudsSave.txt";
+        var fileName = GetSaveFileName();
         fs.readFile(fileName, function(err, data)
         {
             if (err) return;
@@ -436,9 +434,6 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
     var col = new THREE.Color();
     col.setRGB(attenuation, attenuation, attenuation);
     var planeGeometry = new THREE.PlaneGeometry(1.0, 1.0);
-    /*var planeMaterial = new THREE.MeshBasicMaterial( 
-            { color: col, shading: THREE.FlatShading, map: textures[textureIndex], transparent: true, vertexColors: true });
-            */
     var planeMaterial = new THREE.ShaderMaterial(
             {vertexShader: vertexShader, fragmentShader:fragmentShader, side: THREE.DoubleSide});
     planeMaterial.transparent = true;
@@ -516,6 +511,7 @@ function initGUI2()
     gui2.add(settings, "rqtType", rqtTypes);
 
     gui2.add(settings, "fileName");
+    gui2.add(settings, "level", [0, 1, 2, 3]);
     gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add_particle");
     gui2.add(settings, "clone_particle");
@@ -524,6 +520,7 @@ function initGUI2()
     gui2.add(settings, "build_ground");
     gui2.add(settings, "to_lua");
     gui2.add(settings, "optimize_textures");
+    gui2.add(settings, "export_all");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
     if (selectedCloud != null)
