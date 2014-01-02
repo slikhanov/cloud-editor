@@ -11,6 +11,34 @@ var SerializedParticle = function(particle)
     var path = require('path');
     this.textureFile = path.basename(textures[particle._textureIndex].sourceFile);
     this.orientation = particle.orientation;
+
+}
+    
+function toLua(particle)
+{
+    var luaString = "";
+    luaString += "{ position = { ";
+    luaString += particle.position.x.toFixed(2) + ", ";
+    luaString += particle.position.y.toFixed(2) + ", ";
+    luaString += particle.position.z.toFixed(2) + " }, ";
+
+    luaString += "size = { ";
+    luaString += particle.scale.x.toFixed(2) + " * m, ";
+    luaString += particle.scale.y.toFixed(2) + " * m}, ";
+
+    luaString += "texture = ";
+    luaString += particle.textureIndex.toString();
+
+    luaString += ", edgeHardness = 100, ";
+
+    luaString += "orientation = ";
+    luaString += particle.orientation.toString();
+
+    luaString += ", attenuation = ";
+    luaString += (particle.attenuation * 255).toString();
+
+    luaString += "}";
+    return luaString;
 }
 
 function GetSaveFileName()
@@ -23,7 +51,8 @@ function GetSaveFileName()
 
 function GetExportFileName()
 {
-    return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' + settings.fileName + '.Export.txt';
+    //return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' + settings.fileName + '.Export.txt';
+    return settings.folderName + '/CloudTemplates.lua';
 }
 
 function getUserHome() {
@@ -201,16 +230,57 @@ var SceneSettings = function()
                         var fileNameMatch = file.match(/(.*)\.\d\.txt/);
                         if (fileNameMatch != null)
                         {
-                            if (templates.indexOf(fileNameMatch[1]) <= -1)
+                            var fileIdx = -1;
+                            for (idx = 0; idx < template_files.length; ++idx)
                             {
-                                templates[fileNameMatch[1]] = new Array();
+                                if (template_files[idx] == fileNameMatch[1])
+                                {
+                                    fileIdx = idx;
+                                }
                             }
-                            templates[fileNameMatch[1]].push(file);    
+                            if (fileIdx < 0)
+                            { 
+                                template_files.push(fileNameMatch[1]);
+                                template_levels.push(new Array());
+                                fileIdx = template_levels.length - 1;
+                            }
+
+                            var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
+                            var fileData = fs.readFileSync(fileName);
+                            template_levels[fileIdx].push(JSON.parse(fileData));
                         }
                     });
-                stream.write("templateCount = " + templates.length.toString() + "\n");
+                stream.write("templateCount = " + template_files.length.toString() + ",\n");
+                stream.write("templates = {\n"); // Begin Templates.
+                
+                var templateStrings = [];
+                for (templateIdx = 0; templateIdx < template_files.length; ++templateIdx)
+                {
+                    var templateString = "{\n";
+                    var levelStrings = [];
+                    var particles = [];
+                    var offset = 0;
+                    template_levels[templateIdx].forEach(function(template)
+                            {
+                                levelStrings.push("{" + offset.toString() + ", " + template.length.toString() + "}");
+                                template.forEach(function(particle)
+                                    {
+                                        particles.push(toLua(particle));
+                                    });
+                                offset += template.length;
+                            });
 
-                stream.write("}\n");
+                    templateString += "levels = {" + levelStrings.join(',') + "},\n";
+                    templateString += "particleCount = " + offset.toString() + ",\n";
+                    templateString += "particles = {\n" + particles.join(",\n") + "}\n";
+                    templateString += "}\n";
+
+                    templateStrings.push(templateString);
+                }
+                stream.write(templateStrings.join(",\n"));
+
+                stream.write("}\n"); // End Templates.
+                stream.write("}\n"); // End Kind.
             });
             stream.write("}\n");
         });        
