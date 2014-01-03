@@ -11,7 +11,7 @@ var SerializedParticle = function(particle)
     var path = require('path');
     this.textureFile = path.basename(textures[particle._textureIndex].sourceFile);
     this.orientation = particle.orientation;
-
+    this.edgeHardness = particle.edgeHardness;
 }
     
 function toLua(particle)
@@ -29,9 +29,10 @@ function toLua(particle)
     luaString += "texture = ";
     luaString += particle.textureIndex.toString();
 
-    luaString += ", edgeHardness = 100, ";
+    luaString += ", edgeHardness = ";
+    luaString += (particle.edgeHardness * 255).toString();
 
-    luaString += "orientation = ";
+    luaString += ", orientation = ";
     luaString += particle.orientation.toString();
 
     luaString += ", attenuation = ";
@@ -156,7 +157,7 @@ var SceneSettings = function()
     {
         unmarkSelected();
         selectedCloud = null
-        buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 0, 0);
+        buildParticle(new THREE.Vector3(0.0, 0.0, 0.0), new THREE.Vector3(0.2, 0.2, 0.2), 1.0, 1.0, 0, 0);
         selectedCloud = cloud.children[cloud.children.length - 1];
         markSelected();
         initGUI2();
@@ -192,6 +193,7 @@ var SceneSettings = function()
                     serialized.position, 
                     serialized.scale, 
                     serialized.attenuation,
+                    serialized.edgeHardness,
                     serialized.textureIndex,
                     serialized.orientation);
 
@@ -206,7 +208,7 @@ var SceneSettings = function()
     {
         for (x = -1.0; x <= 1.0; x += 0.5)
             for (y = -1.0; y <= 1.0; y += 0.5)
-                buildParticle(new THREE.Vector3(x, y, 0.0), new THREE.Vector3(0.7, 0.7, 0.7), 1.0, 2, 0);
+                buildParticle(new THREE.Vector3(x, y, 0.0), new THREE.Vector3(0.7, 0.7, 0.7), 1.0, 1.0, 2, 0);
     }
 
     this.export_all = function()
@@ -275,6 +277,12 @@ var SceneSettings = function()
                                 levelStrings.push("{" + offset.toString() + ", " + template.length.toString() + "}");
                                 template.forEach(function(particle)
                                     {
+                                        if (!particle.hasOwnProperty('orientation'))
+                                            particle.orientation = 0;
+
+                                        if (!particle.hasOwnProperty('edgeHardness'))
+                                            particle.edgeHardness = 100.0 / 255.0;
+                                        
                                         resolveTextureFields(particle, textures);
                                         resolveTextureFields(particle, textureList);
                                         particles.push(toLua(particle));
@@ -304,33 +312,29 @@ var SceneSettings = function()
         libraryStructure.forEach(function(entry) {
             entry.kinds.forEach(function(kind) {
                 // Get file list for further processing.
-                fs.readdir(settings.folderName + entry.type + '/' + kind + '/', function(err, files)
-                {
-                    if (!err)
+                var files = fs.readdirSync(settings.folderName + entry.type + '/' + kind + '/');
+                files.forEach(function(file)
                     {
-                        files.forEach(function(file)
-                        {
-                            var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
-                            fs.readFile(fileName, function(err, data)
-                                {
-                                    if (err) return;
-                                    var obj = JSON.parse(data);
+                        var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
+                        fs.readFile(fileName, function(err, data)
+                            {
+                                if (err) return;
+                                var obj = JSON.parse(data);
 
-                                    obj.forEach(function(entry)
-                                        {
-                                            resolveTextureFields(entry, textures);
-                                            var src = settings.textureFolderName + entry.textureFile;
-                                            var dst = settings.exportTextureFolderName + entry.textureFile;
-                                            fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
-                                        });
-                                });
-                        });
-                    }
-                });
+                                obj.forEach(function(entry)
+                                    {
+                                        resolveTextureFields(entry, textures);
+                                        var src = settings.textureFolderName + entry.textureFile;
+                                        var dst = settings.exportTextureFolderName + entry.textureFile;
+                                        fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
+                                    });
+                            });
+                    });
             });
         });        
     }
 
+    /*
     this.to_lua = function()
     {
         var fs = require('fs');
@@ -378,7 +382,7 @@ var SceneSettings = function()
         stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
         stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga }\n"); 
         stream.write("}\n");
-    };
+    };*/
 
     this.save = function()
     {
@@ -406,8 +410,10 @@ var SceneSettings = function()
             {
                 if (!entry.hasOwnProperty('orientation'))
                     entry.orientation = 0;
+                if (!entry.hasOwnProperty('edgeHardness'))
+                    entry.edgeHardness = 100.0 / 255.0;
                 resolveTextureFields(entry, textures);
-                buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
+                buildParticle(entry.position, entry.scale, entry.attenuation, entry.edgeHardness, entry.textureIndex, entry.orientation);
             });
         });
     };
@@ -528,7 +534,7 @@ function buildGrid()
     scene.add(grid);
 }
 
-function buildParticle(pos, scale, attenuation, textureIndex, orientation)
+function buildParticle(pos, scale, attenuation, edgeHardness, textureIndex, orientation)
 {
     var col = new THREE.Color();
     col.setRGB(attenuation, attenuation, attenuation);
@@ -564,6 +570,7 @@ function buildParticle(pos, scale, attenuation, textureIndex, orientation)
     });
 
     cell.orientation = orientation;
+    cell.edgeHardness = edgeHardness;
 
     cloud.add(cell);
 }
@@ -617,8 +624,6 @@ function initGUI2()
     gui2.add(settings, "remove_particle");
     gui2.add(settings, "remove_all");
     gui2.add(settings, "build_ground");
-    gui2.add(settings, "to_lua");
-    gui2.add(settings, "optimize_textures");
     gui2.add(settings, "export_all");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
@@ -626,9 +631,9 @@ function initGUI2()
     {
         // Scale.
         var scaleFolder = gui2.addFolder("Particle Scale");
-        scaleFolder.add(selectedCloud.scale, "x").min(0.05).max(2.0).step(0.05)
-        scaleFolder.add(selectedCloud.scale, "y").min(0.05).max(2.0).step(0.05)
-        scaleFolder.add(selectedCloud.scale, "z").min(0.05).max(2.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "x").min(0.05).max(4.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "y").min(0.05).max(4.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "z").min(0.05).max(4.0).step(0.05)
         scaleFolder.open();
 
         // Position.
@@ -638,7 +643,8 @@ function initGUI2()
         positionFolder.add(selectedCloud.position, "z").min(-1.0).max(1.0).step(0.05)
         positionFolder.open();
 
-        gui2.add(selectedCloud, "attenuation").min(0.1).max(1.0).step(0.05);
+        gui2.add(selectedCloud, "attenuation").min(0.0).max(1.0).step(0.05);
+        gui2.add(selectedCloud, "edgeHardness").min(0.0).max(1.0).step(0.05);
         gui2.add(selectedCloud, "textureIndex").min(0).max(textures.length - 1).step(1);
 
         gui2.add(selectedCloud, "orientation").min(0).max(1).step(1);
