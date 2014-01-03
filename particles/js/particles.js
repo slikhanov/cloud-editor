@@ -49,11 +49,12 @@ function GetSaveFileName()
             settings.level.toString() + '.txt';
 }
 
+/*
 function GetExportFileName()
 {
     //return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' + settings.fileName + '.Export.txt';
     return settings.folderName + '/CloudTemplates.lua';
-}
+}*/
 
 function getUserHome() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
@@ -120,7 +121,10 @@ function buildLibrary()
 {   
     createDir(settings.folderName);
     createDir(settings.textureFolderName);
-    createDir(settings.textureExportFolderName);
+    createDir(settings.exportFolderName);
+    createDir(settings.exportTextureFolderName);
+    createDir(settings.exportNormalsFolderName);
+
     libraryStructure.forEach(function(entry)
     {
         createDir(settings.folderName + entry.type);
@@ -135,7 +139,9 @@ var SceneSettings = function()
 {
     this.folderName = getUserHome() + '/Desktop/CloudLibrary/';
     this.textureFolderName = this.folderName + '/textures/';
-    this.textureExportFolderName = this.folderName + '/textures_export/';
+    this.exportFolderName = this.folderName + '/export/';
+    this.exportTextureFolderName = this.exportFolderName + '/textures/';
+    this.exportNormalsFolderName = this.exportFolderName + '/normals/';
 
     var cloudTypes = [];
     libraryStructure.forEach(function(entry) {cloudTypes.push(entry.type);});
@@ -205,13 +211,17 @@ var SceneSettings = function()
 
     this.export_all = function()
     {
+        this.optimize_textures();
+
         var fs = require('fs');
-        var fileName = GetExportFileName();
+        var fileName = settings.exportFolderName + 'CloudTemplates.lua';
         var stream = fs.createWriteStream(fileName, {flags: 'w'});
         // Header information.        
         stream.write("m = 0.25\n");
         stream.write("ga = 140\n");
         stream.write("eh = 100\n");
+
+        var textureList = buildTextureList(settings.exportTextureFolderName);
 
         libraryStructure.forEach(function(entry) {
             stream.write(entry.type + " =\n");
@@ -265,6 +275,8 @@ var SceneSettings = function()
                                 levelStrings.push("{" + offset.toString() + ", " + template.length.toString() + "}");
                                 template.forEach(function(particle)
                                     {
+                                        resolveTextureFields(particle, textures);
+                                        resolveTextureFields(particle, textureList);
                                         particles.push(toLua(particle));
                                     });
                                 offset += template.length;
@@ -306,9 +318,9 @@ var SceneSettings = function()
 
                                     obj.forEach(function(entry)
                                         {
-                                            resolveTextureFields(entry);
+                                            resolveTextureFields(entry, textures);
                                             var src = settings.textureFolderName + entry.textureFile;
-                                            var dst = settings.textureExportFolderName + entry.textureFile;
+                                            var dst = settings.exportTextureFolderName + entry.textureFile;
                                             fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
                                         });
                                 });
@@ -394,7 +406,7 @@ var SceneSettings = function()
             {
                 if (!entry.hasOwnProperty('orientation'))
                     entry.orientation = 0;
-                resolveTextureFields(entry);
+                resolveTextureFields(entry, textures);
                 buildParticle(entry.position, entry.scale, entry.attenuation, entry.textureIndex, entry.orientation);
             });
         });
@@ -433,23 +445,40 @@ function loadTextures()
         });
 }
 
-function resolveTextureFields(entry)
+var TextureEntry = function(fileName)
+{
+    this.sourceFile = fileName;
+}
+
+function buildTextureList(folderName)
+{
+    var textureList = [];
+    var fs = require('fs');
+    var files = fs.readdirSync(folderName);
+    files.forEach(function(entry)
+            {
+                textureList.push(new TextureEntry(folderName + entry));
+            });
+    return textureList;
+}
+
+function resolveTextureFields(entry, textureList)
 {
     if (!entry.hasOwnProperty('textureFile'))
     {
         var path = require('path');
-        entry.textureFile = path.basename(textures[entry.textureIndex].sourceFile);
+        entry.textureFile = path.basename(textureList[entry.textureIndex].sourceFile);
     }
 
-    entry.textureIndex = findTextureIndex(entry.textureFile);
+    entry.textureIndex = findTextureIndex(entry.textureFile, textureList);
 }
 
-function findTextureIndex(textureFile)
+function findTextureIndex(textureFile, textureList)
 {
     var path = require('path');
     for (idx = 0; idx < textures.length; ++idx)
     {
-        if (path.basename(textures[idx].sourceFile) == textureFile)
+        if (path.basename(textureList[idx].sourceFile) == textureFile)
             return idx;
     }
     return 0;
