@@ -2,6 +2,10 @@
 if (!Detector.webgl) 
     Detector.addGetWebGLMessage();
 
+process.on('uncaughtException', function(err) {
+  console.log(err);
+});
+
 var SerializedParticle = function(particle)
 {
     this.position = new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z);
@@ -631,9 +635,9 @@ function initGUI2()
     {
         // Scale.
         var scaleFolder = gui2.addFolder("Particle Scale");
-        scaleFolder.add(selectedCloud.scale, "x").min(0.05).max(4.0).step(0.05)
-        scaleFolder.add(selectedCloud.scale, "y").min(0.05).max(4.0).step(0.05)
-        scaleFolder.add(selectedCloud.scale, "z").min(0.05).max(4.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "x").min(0.05).max(6.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "y").min(0.05).max(6.0).step(0.05)
+        scaleFolder.add(selectedCloud.scale, "z").min(0.05).max(6.0).step(0.05)
         scaleFolder.open();
 
         // Position.
