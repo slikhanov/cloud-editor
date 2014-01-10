@@ -54,13 +54,6 @@ function GetSaveFileName()
             settings.level.toString() + '.txt';
 }
 
-/*
-function GetExportFileName()
-{
-    //return settings.folderName + settings.cloudType + '/' + settings.rqtType + '/' + settings.fileName + '.Export.txt';
-    return settings.folderName + '/CloudTemplates.lua';
-}*/
-
 function getUserHome() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 }
@@ -68,7 +61,7 @@ function getUserHome() {
 var libraryStructure = 
 [
     { type: "LowClouds", kinds : [
-        "FairWeatherCumulus",
+        "ScatteredFairWeatherCumulus",
         "BrokenSwellingCumulusCongestus",
         "ScatteredCumulonimbusAndScatteredToBrokenCumulusCongestus",
         "WidespreadCumulusCongestusAndCumulonimbus",
@@ -217,7 +210,7 @@ var SceneSettings = function()
 
     this.export_all = function()
     {
-        this.optimize_textures();
+        var texCount = this.optimize_textures();
 
         var fs = require('fs');
         var fileName = settings.exportFolderName + 'CloudTemplates.lua';
@@ -227,14 +220,22 @@ var SceneSettings = function()
         stream.write("ga = 140\n");
         stream.write("eh = 100\n");
 
+        stream.write("Global = {\n");
+        stream.write("AtlasTextureCount = " + texCount.toString() + ";\n");
+        stream.write("}\n");
+
         var textureList = buildTextureList(settings.exportTextureFolderName);
 
         libraryStructure.forEach(function(entry) {
             stream.write(entry.type + " =\n");
             stream.write("{\n");
+
+            var kindStrings = [];
+
             entry.kinds.forEach(function(kind) {
-                stream.write(kind + " =\n");
-                stream.write("{\n");
+                var kindString = "";
+                kindString += kind + " =\n";
+                kindString += "{\n";
 
                 // Get file list for further processing.
                 var folderName = settings.folderName + entry.type + '/' + kind + '/';
@@ -266,8 +267,8 @@ var SceneSettings = function()
                             template_levels[fileIdx].push(JSON.parse(fileData));
                         }
                     });
-                stream.write("templateCount = " + template_files.length.toString() + ",\n");
-                stream.write("templates = {\n"); // Begin Templates.
+                kindString += "templateCount = " + template_files.length.toString() + ",\n";
+                kindString += "templates = {\n"; // Begin Templates.
                 
                 var templateStrings = [];
                 for (templateIdx = 0; templateIdx < template_files.length; ++templateIdx)
@@ -301,11 +302,13 @@ var SceneSettings = function()
 
                     templateStrings.push(templateString);
                 }
-                stream.write(templateStrings.join(",\n"));
+                kindString += templateStrings.join(",\n");
 
-                stream.write("}\n"); // End Templates.
-                stream.write("}\n"); // End Kind.
+                kindString += "}\n"; // End Templates.
+                kindString += "}\n"; // End Kind.
+                kindStrings.push(kindString);
             });
+            stream.write(kindStrings.join(",\n"));
             stream.write("}\n");
         });        
     }
@@ -313,29 +316,41 @@ var SceneSettings = function()
     this.optimize_textures = function()
     {
         var fs = require('fs');
+        
         libraryStructure.forEach(function(entry) {
             entry.kinds.forEach(function(kind) {
                 // Get file list for further processing.
                 var files = fs.readdirSync(settings.folderName + entry.type + '/' + kind + '/');
                 files.forEach(function(file)
                     {
-                        var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
-                        fs.readFile(fileName, function(err, data)
-                            {
-                                if (err) return;
-                                var obj = JSON.parse(data);
+                        if (file.match(/^\.+/))
+                            return;
 
-                                obj.forEach(function(entry)
-                                    {
-                                        resolveTextureFields(entry, textures);
-                                        var src = settings.textureFolderName + entry.textureFile;
-                                        var dst = settings.exportTextureFolderName + entry.textureFile;
-                                        fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
-                                    });
+                        var fileName = settings.folderName + entry.type + '/' + kind + '/' + file;
+                        var data = fs.readFileSync(fileName);
+                        var obj = JSON.parse(data);
+
+                        obj.forEach(function(entry)
+                            {
+                                resolveTextureFields(entry, textures);
+                                var src = settings.textureFolderName + entry.textureFile;
+                                var dst = settings.exportTextureFolderName + entry.textureFile;
+                                fs.createReadStream(src).pipe(fs.createWriteStream(dst, {flags: 'w'}));
                             });
+                        //var data = fs.readFileSync(fileName);
                     });
             });
-        });        
+        }); 
+
+        var atlasTextureCount = 0;
+        var exportFiles = fs.readdirSync(settings.exportTextureFolderName);
+        exportFiles.forEach(function(exportFile)
+                {
+                    if (file.match(/^\.+/))
+                        return;
+                    atlasTextureCount++;
+                });
+        return atlasTextureCount;       
     }
 
     /*
