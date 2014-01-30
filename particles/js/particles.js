@@ -313,6 +313,26 @@ var SceneSettings = function()
         });        
     }
 
+    this.simplify = function()
+    {
+        var selectedParticle;
+        cloud.children.forEach(function(entry)
+        {
+            if (selectedParticle == null)
+            {
+                selectedParticle = entry;
+            }
+            else
+            {
+                if (selectedParticle.scale.x * selectedParticle.scale.y < entry.scale.x * entry.scale.y)
+                {
+                    selectedParticle = entry;
+                }
+            }
+        });
+
+    }
+
     this.optimize_textures = function()
     {
         var fs = require('fs');
@@ -705,6 +725,9 @@ function init()
     viewportContainer = document.getElementById('gl');
 
     buildScene();
+
+    // Temporary solution, particle count monitoring tool.
+    setInterval(function() {document.getElementById('particle_field').innerHTML = cloud.children.length.toString(); }, 1000);
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
     renderer.setClearColor(0x87CEFA, 1);
