@@ -331,6 +331,23 @@ var SceneSettings = function()
             }
         });
 
+        while (cloud.children.length > 0)
+            cloud.remove(cloud.children[0]);
+        selectedCloud = null;
+        unmarkSelected();
+        if (selectedParticle != null)
+        {
+            var serialized = new SerializedParticle(selectedParticle);
+
+            buildParticle(
+                    serialized.position, 
+                    serialized.scale, 
+                    serialized.attenuation,
+                    serialized.edgeHardness,
+                    serialized.textureIndex,
+                    serialized.orientation);
+        }
+        initGUI2();
     }
 
     this.optimize_textures = function()
@@ -683,7 +700,7 @@ function initGUI2()
     gui2.add(settings, "clone_particle");
     gui2.add(settings, "remove_particle");
     gui2.add(settings, "remove_all");
-    gui2.add(settings, "build_ground");
+    gui2.add(settings, "simplify");
     gui2.add(settings, "export_all");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
