@@ -210,6 +210,7 @@ var SceneSettings = function()
 
     this.export_all = function()
     {
+        var errorCount = 0;
         var texCount = this.optimize_textures();
 
         var fs = require('fs');
@@ -277,6 +278,11 @@ var SceneSettings = function()
                     var levelStrings = [];
                     var particles = [];
                     var offset = 0;
+                    if (template_levels[templateIdx].length < 4)
+                    {
+                        alert("Detail Level Count is incorrect: " + entry.type + ", " + kind + ", " + templateIdx.toString());
+                        errorCount++;
+                    }
                     template_levels[templateIdx].forEach(function(template)
                             {
                                 levelStrings.push("{" + offset.toString() + ", " + template.length.toString() + "}");
@@ -295,6 +301,12 @@ var SceneSettings = function()
                                 offset += template.length;
                             });
 
+                    if (offset > 64)
+                    {
+                        alert("Particle Count is incorrect: " + entry.type + ", " + kind + ", " + templateIdx.toString());
+                        errorCount++;
+                    }
+
                     templateString += "levels = {" + levelStrings.join(',') + "},\n";
                     templateString += "particleCount = " + offset.toString() + ",\n";
                     templateString += "particles = {\n" + particles.join(",\n") + "}\n";
@@ -311,6 +323,14 @@ var SceneSettings = function()
             stream.write(kindStrings.join(",\n"));
             stream.write("}\n");
         });        
+        if (errorCount == 0)
+        {
+            alert("Exported all data correctly!");
+        }
+        else
+        {
+            alert("Exported data with errors. Total: " + errorCount.toString());
+        }
     }
 
     this.simplify = function()
