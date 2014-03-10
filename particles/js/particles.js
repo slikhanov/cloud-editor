@@ -18,13 +18,13 @@ var SerializedParticle = function(particle)
     this.edgeHardness = particle.edgeHardness;
 }
     
-function toLua(particle)
+function toLua(particle, minZ)
 {
     var luaString = "";
     luaString += "{ position = { ";
     luaString += particle.position.x.toFixed(2) + ", ";
     luaString += particle.position.y.toFixed(2) + ", ";
-    luaString += particle.position.z.toFixed(2) + " }, ";
+    luaString += (particle.position.z - minZ).toFixed(2) + " }, ";
 
     luaString += "size = { ";
     luaString += particle.scale.x.toFixed(2) + " * m, ";
@@ -286,6 +286,16 @@ var SceneSettings = function()
                     template_levels[templateIdx].forEach(function(template)
                             {
                                 levelStrings.push("{" + offset.toString() + ", " + template.length.toString() + "}");
+
+                                var minZ = 1000.0;
+                                template.forEach(function(particle)
+                                    {
+                                        if (particle.position.z < minZ)
+                                        {
+                                            minZ = particle.position.z;
+                                        }
+                                    });
+
                                 template.forEach(function(particle)
                                     {
                                         if (!particle.hasOwnProperty('orientation'))
@@ -296,7 +306,7 @@ var SceneSettings = function()
                                         
                                         resolveTextureFields(particle, textures);
                                         resolveTextureFields(particle, textureList);
-                                        particles.push(toLua(particle));
+                                        particles.push(toLua(particle, minZ));
                                     });
                                 offset += template.length;
                             });
