@@ -774,7 +774,16 @@ function init()
     buildScene();
 
     // Temporary solution, particle count monitoring tool.
-    setInterval(function() {document.getElementById('particle_field').innerHTML = cloud.children.length.toString(); }, 1000);
+    setInterval(function() 
+                {
+                    document.getElementById('particle_field').innerHTML =
+                            cloud.children.length.toString(); 
+
+                    document.getElementById('particle_id').innerHTML = '';
+                    var selectedIdx = getSelectedIdx();
+                    if (selectedIdx >= 0)
+                        document.getElementById('particle_id').innerHTML = selectedIdx.toString();
+                }, 1000);
 
     renderer = new THREE.WebGLRenderer( { clearAlpha: 1 } );
     renderer.setClearColor(0x87CEFA, 1);
@@ -807,6 +816,8 @@ function onKeyUp(event)
     switch (event.keyCode) 
     {
         case 46: settings.remove_particle(); break;   
+        case 188: selectPreviousObject(); break;
+        case 190: selectNextObject(); break;
     }
 }
 
@@ -825,12 +836,51 @@ function performSelection(x, y)
     var intersects = testRaycaster.intersectObjects( cloud.children );
     if (intersects.length > 0)
     {
-        if (selectedCloud)
-            unmarkSelected();
+        selectObject(intersects[0].object);
+    }
+}
 
-        selectedCloud = intersects[0].object;
-        markSelected();
-        initGUI2();
+function selectObject(obj)
+{
+    if (selectedCloud)
+        unmarkSelected();
+
+    selectedCloud = obj;
+    markSelected();
+    initGUI2();
+}
+
+function getNextObject(obj)
+{
+    if (cloud.children.length == 0)
+        return null;
+    var objectIdx = getObjectIdx(obj);
+    return cloud.children[(objectIdx + 1) % cloud.children.length];
+}
+
+function getPreviousObject(obj)
+{
+    if (cloud.children.length == 0)
+        return null;
+    var objectIdx = getObjectIdx(obj);
+    return cloud.children[(objectIdx - 1) % cloud.children.length];
+}
+
+function selectNextObject()
+{
+    var nextObject = getNextObject(selectedCloud);
+    if (nextObject)
+    {
+        selectObject(nextObject);
+    }
+}
+
+function selectPreviousObject()
+{
+    var prevObject = getPrevioustObject(selectedCloud);
+    if (prevObject)
+    {
+        selectObject(prevObject);
     }
 }
 
@@ -845,6 +895,24 @@ function unmarkSelected()
 {
     if (selectedCloud != null && selectedCloud.children.length > 0)
         selectedCloud.remove(selectedCloud.children[0]);
+}
+
+function getObjectIdx(obj)
+{
+    var objectIdx = -1;
+    var idx = 0;
+    cloud.children.forEach(function(entry)
+        {
+            if (entry === obj)
+                objectIdx = idx;
+            ++idx;
+        });
+    return objectIdx;
+}
+
+function getSelectedIdx()
+{
+    return getObjectIdx(selectedCloud);
 }
 
 function animate() 
