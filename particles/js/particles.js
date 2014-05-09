@@ -816,8 +816,8 @@ function onKeyUp(event)
     switch (event.keyCode) 
     {
         case 46: settings.remove_particle(); break;   
-        case 188: selectPreviousObject(); break;
-        case 190: selectNextObject(); break;
+        case 100: selectPreviousObject(); break;
+        case 102: selectNextObject(); break;
     }
 }
 
