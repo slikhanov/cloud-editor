@@ -692,6 +692,7 @@ function buildScene()
 {
     camera = new THREE.PerspectiveCamera( 55, viewportContainer.clientWidth / viewportContainer.clientHeight, 2, 2000 );
     camera.position.z = 200;
+    camera.up = new THREE.Vector3(0, 0, 1);
 
     scene = new THREE.Scene();
     //scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
