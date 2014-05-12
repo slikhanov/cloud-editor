@@ -685,7 +685,9 @@ function buildParticle(pos, scale, attenuation, edgeHardness, textureIndex, orie
 function buildControls()
 {
     controls = new THREE.OrbitControls(camera, renderer.domElement );
-    controls.addEventListener( 'change', render );
+    //controls = new THREE.TrackballControls(camera);
+    //controls.staticMoving = true;
+    controls.addEventListener('change', render);
 }
 
 function buildScene()
