@@ -8,8 +8,8 @@ process.on('uncaughtException', function(err) {
 
 var SerializedParticle = function(particle)
 {
-    this.position = new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z);
-    this.scale = new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z);
+    this.position.copy(new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z));
+    this.scale.copy(new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z));
     this.attenuation = particle._attenuation;
     this.textureIndex = particle._textureIndex;
     var path = require('path');
@@ -199,6 +199,16 @@ var SceneSettings = function()
 
             initGUI2();
         }    
+    }
+
+    this.next_particle = function()
+    {
+        selectNextObject();
+    }
+
+    this.prev_particle = function()
+    {
+        selectPreviousObject();
     }
 
     this.build_ground = function()
@@ -421,56 +431,6 @@ var SceneSettings = function()
         return atlasTextureCount;       
     }
 
-    /*
-    this.to_lua = function()
-    {
-        var fs = require('fs');
-        var fileName = GetExportFileName();
-        var stream = fs.createWriteStream(fileName, {flags: 'w'});
-        var cnt = cloud.children.length;
-        stream.write("levels = {{0, ");
-        stream.write(cnt.toString());
-        stream.write("}, {");
-        stream.write(cnt.toString());
-        stream.write(", 1}, {");
-        stream.write((cnt + 1).toString());
-        stream.write(", 1}, {");
-        stream.write((cnt + 2).toString());
-        stream.write(", 1}},\n"); 
-        stream.write("particleCount = ");
-        stream.write((cnt + 3).toString());
-        stream.write(",\n");
-        stream.write("particles = {\n");
-        cloud.children.forEach(function(entry)
-            {
-                stream.write("   { position = { ");
-                stream.write(entry.position.x.toFixed(2) + ", ");
-                stream.write(entry.position.y.toFixed(2) + ", ");
-                stream.write(entry.position.z.toFixed(2) + " }, ");
-
-                stream.write("size = { ");
-                stream.write(entry.scale.x.toFixed(2) + " * m, ");
-                stream.write(entry.scale.y.toFixed(2) + " * m}, ");
-
-                stream.write("texture = ");
-                stream.write(entry.textureIndex.toString());
-
-                stream.write(", edgeHardness = 100, ");
-
-                stream.write("orientation = ");
-                stream.write(entry.orientation.toString());
-
-                stream.write(", attenuation = ");
-                stream.write((entry.attenuation * 255).toString());
-
-                stream.write("},\n");
-            });
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga },\n"); 
-        stream.write("   { position = { 0.0, 0.0, 0.0 }, size = { 0.5, 0.5 }, texture = 1, edgeHardness = 100, orientation = 0, attenuation = ga }\n"); 
-        stream.write("}\n");
-    };*/
-
     this.save = function()
     {
         var serializedParticles = [];
@@ -654,8 +614,8 @@ function buildParticle(pos, scale, attenuation, edgeHardness, textureIndex, orie
     planeMaterial.uniforms.attenuation = {type: "f", value: attenuation };
 
     var cell = new THREE.Mesh(planeGeometry, planeMaterial);
-    cell.position = pos;
-    cell.scale = scale;
+    cell.position.copy(pos);
+    cell.scale.copy(scale);
     cell.grayness = Math.random();
 
     cell._attenuation = attenuation;
@@ -728,9 +688,11 @@ function initGUI2()
 
     gui2.add(settings, "fileName");
     gui2.add(settings, "level", [0, 1, 2, 3]);
-    gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
+    //gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add_particle");
     gui2.add(settings, "clone_particle");
+    gui2.add(settings, "next_particle");
+    gui2.add(settings, "prev_particle");
     gui2.add(settings, "remove_particle");
     gui2.add(settings, "remove_all");
     gui2.add(settings, "simplify");
@@ -819,8 +781,6 @@ function onKeyUp(event)
     switch (event.keyCode) 
     {
         case 46: settings.remove_particle(); break;   
-        case 100: selectPreviousObject(); break;
-        case 102: selectNextObject(); break;
     }
 }
 
@@ -880,7 +840,7 @@ function selectNextObject()
 
 function selectPreviousObject()
 {
-    var prevObject = getPrevioustObject(selectedCloud);
+    var prevObject = getPreviousObject(selectedCloud);
     if (prevObject)
     {
         selectObject(prevObject);
@@ -890,7 +850,7 @@ function selectPreviousObject()
 function markSelected()
 {
     selectedCloud.add( new THREE.Mesh(
-            new THREE.CubeGeometry(0.05, 0.05, 0.05),
+            new THREE.BoxGeometry(0.05, 0.05, 0.05),
             new THREE.MeshBasicMaterial({color: '#f00'})));
 }
 
