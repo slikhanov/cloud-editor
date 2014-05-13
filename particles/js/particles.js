@@ -8,8 +8,8 @@ process.on('uncaughtException', function(err) {
 
 var SerializedParticle = function(particle)
 {
-    this.position.copy(new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z));
-    this.scale.copy(new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z));
+    this.position = new THREE.Vector3(particle.position.x, particle.position.y, particle.position.z);
+    this.scale = new THREE.Vector3(particle.scale.x, particle.scale.y, particle.scale.z);
     this.attenuation = particle._attenuation;
     this.textureIndex = particle._textureIndex;
     var path = require('path');
