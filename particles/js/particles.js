@@ -17,6 +17,16 @@ var SerializedParticle = function(particle)
     this.orientation = particle.orientation;
     this.edgeHardness = particle.edgeHardness;
 }
+
+function ParticlesMatch(particle1, particle2)
+{
+    return ((particle1.position === particle2.position) &&
+            (particle1.scale === particle2.scale) &&
+            (particle1.attenuation === particle2.attenuation) &&
+            (particle1.textureFile === particle2.textureFile) &&
+            (particle1.orientation === particle2.orientation) &&
+            (particle1.edgeHardness === particle2.edgeHardness));
+}
     
 function toLua(particle, minZ)
 {
@@ -51,6 +61,14 @@ function GetSaveFileName()
     return settings.folderName + settings.cloudType + '/' + 
             settings.rqtType + '/' +  
             settings.fileName + '.' + 
+            settings.level.toString() + '.txt';
+}
+
+function GetExtractFileName(fileName)
+{
+    return settings.folderName + settings.cloudType + '/' + 
+            settings.rqtType + '/' +  
+            fileName + '.' + 
             settings.level.toString() + '.txt';
 }
 
@@ -209,13 +227,6 @@ var SceneSettings = function()
     this.prev_particle = function()
     {
         selectPreviousObject();
-    }
-
-    this.build_ground = function()
-    {
-        for (x = -1.0; x <= 1.0; x += 0.5)
-            for (y = -1.0; y <= 1.0; y += 0.5)
-                buildParticle(new THREE.Vector3(x, y, 0.0), new THREE.Vector3(0.7, 0.7, 0.7), 1.0, 1.0, 2, 0);
     }
 
     this.export_all = function()
@@ -464,6 +475,45 @@ var SceneSettings = function()
             });
         });
     };
+
+    this.extractFrom = "";
+    this.extractWhat = "";
+
+    this.extract = function()
+    {
+        var extractFromObj = LoadObject(GetExtractFileName(settings.extractFrom));
+        var extractObj = LoadObject(GetExtractFileName(settings.extractWhat));
+
+        var newObject = [];
+        extractFromObj.forEach(function(entry)
+        {
+            var found = false;
+            extractObj.forEach(function(srcEntry)
+            {
+                found = found || ParticlesMatch(entry, srcEntry);
+            });
+
+            if (!found)
+                newObject.push(entry);
+        });
+    }
+}
+
+function LoadObject(fileName)
+{
+    var fs = require('fs');
+    var data = fs.readFileSync(fileName);
+    var obj = JSON.parse(data);
+    obj.forEach(function(entry)
+    {
+        if (!entry.hasOwnProperty('orientation'))
+            entry.orientation = 0;
+        if (!entry.hasOwnProperty('edgeHardness'))
+            entry.edgeHardness = 100.0 / 255.0;
+        resolveTextureFields(entry, textures);
+    });
+
+    return obj;
 }
 
 var settings, gui;
@@ -688,7 +738,6 @@ function initGUI2()
 
     gui2.add(settings, "fileName");
     gui2.add(settings, "level", [0, 1, 2, 3]);
-    //gui2.add(settings, "scale").min(20.0).max(200.0).step(5.0);
     gui2.add(settings, "add_particle");
     gui2.add(settings, "clone_particle");
     gui2.add(settings, "next_particle");
@@ -699,6 +748,10 @@ function initGUI2()
     gui2.add(settings, "export_all");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
+    gui2.add(settings, "extractFrom");
+    gui2.add(settings, "extractWhat");
+    gui2.add(settings, "extract");
+
     if (selectedCloud != null)
     {
         // Scale.
