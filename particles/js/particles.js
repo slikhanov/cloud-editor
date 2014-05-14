@@ -20,8 +20,12 @@ var SerializedParticle = function(particle)
 
 function ParticlesMatch(particle1, particle2)
 {
-    return ((particle1.position === particle2.position) &&
-            (particle1.scale === particle2.scale) &&
+    return ((particle1.position.x === particle2.position.x) &&
+            (particle1.position.y === particle2.position.y) &&
+            (particle1.position.z === particle2.position.z) &&
+            (particle1.scale.x === particle2.scale.x) &&
+            (particle1.scale.y === particle2.scale.y) &&
+            (particle1.scale.z === particle2.scale.z) &&
             (particle1.attenuation === particle2.attenuation) &&
             (particle1.textureFile === particle2.textureFile) &&
             (particle1.orientation === particle2.orientation) &&
@@ -496,6 +500,10 @@ var SceneSettings = function()
             if (!found)
                 newObject.push(entry);
         });
+        var fs = require('fs');
+        var fileName = GetExtractFileName(settings.extractFrom);
+        var stream = fs.createWriteStream(fileName, {flags: 'w'});
+        stream.write(JSON.stringify(newObject));
     }
 }
 
@@ -514,6 +522,16 @@ function LoadObject(fileName)
     });
 
     return obj;
+}
+
+function BuildAnimation(fileName)
+{
+    var fs = require('fs');
+    var data = fs.readFileSync(fileName);
+    var particles = JSON.parse(data);
+    particles.sort(function(a,b) 
+           {return (a.position.z > b.position.z) ? 1 : ((b.position.z > a.position.z) ? -1 : 0);} ); 
+
 }
 
 var settings, gui;
