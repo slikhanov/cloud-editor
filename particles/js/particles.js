@@ -68,6 +68,19 @@ function GetSaveFileName()
             settings.level.toString() + '.txt';
 }
 
+function GetSaveFileNamesForAllLevels()
+{
+    var fileNames = [];
+    for (var idx = 0; idx < 4; ++idx)
+    {
+        fileNames.push(settings.folderName + settings.cloudType + '/' + 
+                settings.rqtType + '/' +  
+                settings.fileName + '.' + 
+                idx + '.txt');
+    }
+    return fileNames;
+}
+
 function GetExtractFileName(fileName)
 {
     return settings.folderName + settings.cloudType + '/' + 
@@ -524,14 +537,31 @@ function LoadObject(fileName)
     return obj;
 }
 
-function BuildAnimation(fileName)
+function BuildAnimation()
 {
     var fs = require('fs');
-    var data = fs.readFileSync(fileName);
-    var particles = JSON.parse(data);
-    particles.sort(function(a,b) 
-           {return (a.position.z > b.position.z) ? 1 : ((b.position.z > a.position.z) ? -1 : 0);} ); 
+    var files = GetSaveFileNamesForAllLevels();
+    var all_particles = [];
+    files.forEach(function(fileEntry)
+            {
+                var data = fs.readFileSync(fileEntry);
+                var particles = JSON.parse(data);
+                all_particles.concat(particles);
+            });
 
+    var sort_particles = all_particles.splice(0);
+    sort_particles.sort(function(a,b) 
+           {return (a.position.z > b.position.z) ? 1 : ((b.position.z > a.position.z) ? -1 : 0);} ); 
+    var minAltitude = sort_particles[0].position.z;
+    var maxAltitude = sort_particles[sort_particles.length - 1].position.z;
+    
+    // Write file.
+    var fileName = settings.exportFolderName + 'Cumulonimbus.lua';
+    var stream = fs.createWriteStream(fileName, {flags: 'w'});
+    stream.write("-- Cumulonimbus Animation\n\n");
+    stream.write("Animation =\n{\n");
+
+    stream.write("}\n");
 }
 
 var settings, gui;
