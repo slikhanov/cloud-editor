@@ -381,6 +381,11 @@ var SceneSettings = function()
         }
     }
 
+    this.export_animation = function()
+    {
+        BuildAnimation();
+    }
+
     this.simplify = function()
     {
         var selectedParticle;
@@ -546,7 +551,7 @@ function BuildAnimation()
             {
                 var data = fs.readFileSync(fileEntry);
                 var particles = JSON.parse(data);
-                all_particles.concat(particles);
+                all_particles.push.apply(all_particles, particles);
             });
 
     var sort_particles = all_particles.splice(0);
@@ -554,13 +559,28 @@ function BuildAnimation()
            {return (a.position.z > b.position.z) ? 1 : ((b.position.z > a.position.z) ? -1 : 0);} ); 
     var minAltitude = sort_particles[0].position.z;
     var maxAltitude = sort_particles[sort_particles.length - 1].position.z;
+    var height = maxAltitude - minAltitude;
     
     // Write file.
     var fileName = settings.exportFolderName + 'Cumulonimbus.lua';
     var stream = fs.createWriteStream(fileName, {flags: 'w'});
     stream.write("-- Cumulonimbus Animation\n\n");
     stream.write("Animation =\n{\n");
+    stream.write("    particleCount = " + all_particles.length.toString() + ",\n");
+    stream.write("    particles = {\n");
+    all_particles.forEach(function(particle)
+          {
+              stream.write("        { lifetime = {");
+              var start = 0.5 * (particle.position.z - minAltitude) / height;
+              var end = start + 0.3 + Math.random() * 0.2;
+              stream.write(start.toString() + ", ");
+              stream.write(end.toString() + ", ");
+              stream.write("0.95, 1.0");
+              stream.write("}, pulsating = {");
+              stream.write("} },\n");
 
+          });
+    stream.write("    }\n");
     stream.write("}\n");
 }
 
@@ -794,6 +814,7 @@ function initGUI2()
     gui2.add(settings, "remove_all");
     gui2.add(settings, "simplify");
     gui2.add(settings, "export_all");
+    gui2.add(settings, "export_animation");
     gui2.add(settings, "save");
     gui2.add(settings, "load");
     gui2.add(settings, "extractFrom");
