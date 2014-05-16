@@ -76,7 +76,7 @@ function GetSaveFileNamesForAllLevels()
         fileNames.push(settings.folderName + settings.cloudType + '/' + 
                 settings.rqtType + '/' +  
                 settings.fileName + '.' + 
-                idx + '.txt');
+                idx.toString() + '.txt');
     }
     return fileNames;
 }
@@ -551,10 +551,10 @@ function BuildAnimation()
             {
                 var data = fs.readFileSync(fileEntry);
                 var particles = JSON.parse(data);
-                all_particles.push.apply(all_particles, particles);
+                all_particles = all_particles.concat(particles);
             });
 
-    var sort_particles = all_particles.splice(0);
+    var sort_particles = all_particles.slice(0);
     sort_particles.sort(function(a,b) 
            {return (a.position.z > b.position.z) ? 1 : ((b.position.z > a.position.z) ? -1 : 0);} ); 
     var minAltitude = sort_particles[0].position.z;
@@ -568,18 +568,25 @@ function BuildAnimation()
     stream.write("Animation =\n{\n");
     stream.write("    particleCount = " + all_particles.length.toString() + ",\n");
     stream.write("    particles = {\n");
+    var particleStrings = [];
     all_particles.forEach(function(particle)
           {
-              stream.write("        { lifetime = {");
+              var particleString = "        { lifetime = {";
               var start = 0.5 * (particle.position.z - minAltitude) / height;
               var end = start + 0.3 + Math.random() * 0.2;
-              stream.write(start.toString() + ", ");
-              stream.write(end.toString() + ", ");
-              stream.write("0.95, 1.0");
-              stream.write("}, pulsating = {");
-              stream.write("} },\n");
-
+              particleString += start.toString() + ", ";
+              particleString += end.toString() + ", ";
+              particleString += "0.95, 1.0";
+              particleString += "}, pulsating = {";
+              var pulsating = 0.0005 + Math.random() * 0.003;
+              var frequency = Math.random() * 60;
+              particleString += pulsating.toString();
+              particleString += ", ";
+              particleString += frequency.toString();
+              particleString += "} }";
+              particleStrings.push(particleString);
           });
+    stream.write(particleStrings.join(",\n"));
     stream.write("    }\n");
     stream.write("}\n");
 }
